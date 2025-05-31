@@ -1,6 +1,7 @@
 // Types representing the game data structure
 
 export type NodeType = 'location' | 'character' | 'item' | 'object';
+export type CharacterSubtype = 'pc' | 'npc' | 'aic' | 'animal' | 'merchant';
 
 export interface Node {
   id: string;
@@ -74,4 +75,11 @@ export interface GameState {
   playerStats: Record<string, number | string>;
   currentDialog: DialogNode | null;
   gameLog: string[];
+}
+
+export interface AICharacterContext {
+  name: string;
+  personality: string;
+  knowledge: string[];
+  memory: string[];
 }
