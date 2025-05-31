@@ -10,5 +10,6 @@ export const nodes: Node[] = [
   { id: 'item_1', type: 'item', subtype: 'potion', name: 'Healing Potion', description: 'A small vial that restores health.' },
   { id: 'item_2', type: 'item', subtype: 'weapon', name: 'Rusty Sword', description: 'An old, worn sword found in the tavern.' },
   { id: 'item_3', type: 'item', subtype: 'key', name: 'Mysterious Key', description: 'A key with unknown origins, found at the forest edge.' },
+  { id: 'item_4', type: 'item', subtype: 'artifact', name: 'Ancient Medallion', description: 'A mysterious medallion with strange markings, said to hold great power.' },
   { id: 'door_1', type: 'object', subtype: 'door', name: 'Cellar Door', description: 'A heavy wooden door between the tavern and the cellar.' }
 ];
