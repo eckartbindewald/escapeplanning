@@ -14,9 +14,15 @@ export class AICharacter {
   }
 
   async initialize() {
-    this.pipeline = await pipeline('text-generation', 'TinyLlama/TinyLlama-1.1B-Chat-v1.0', {
-      quantized: true
-    });
+    try {
+      this.pipeline = await pipeline('text-generation', 'Xenova/tiny-llama-1.1b-chat-v0.1', {
+        quantized: true,
+        revision: 'main'
+      });
+    } catch (error) {
+      console.error('Failed to initialize pipeline:', error);
+      throw new Error('Failed to initialize AI character');
+    }
   }
 
   async generateResponse(input: string): Promise<string> {
@@ -24,29 +30,36 @@ export class AICharacter {
       await this.initialize();
     }
 
-    const prompt = this.buildPrompt(input);
-    const result = await this.pipeline(prompt, {
-      max_new_tokens: 100,
-      temperature: 0.7
-    });
+    try {
+      const prompt = this.buildPrompt(input);
+      const result = await this.pipeline(prompt, {
+        max_new_tokens: 100,
+        temperature: 0.7,
+        do_sample: true
+      });
 
-    const response = result[0].generated_text;
-    this.updateMemory(input, response);
+      const response = this.extractResponse(result[0].generated_text);
+      this.updateMemory(input, response);
 
-    return response;
+      return response;
+    } catch (error) {
+      console.error('Failed to generate response:', error);
+      throw new Error('Failed to generate AI response');
+    }
   }
 
   private buildPrompt(input: string): string {
-    return `
-Character: ${this.name}
-Personality: ${this.personality}
+    return `<|system|>You are ${this.name}, ${this.personality}</|system|>
 
-Recent context:
-${this.context.join('\n')}
+<|user|>${input}</|user|>
 
-User: ${input}
+<|assistant|>`;
+  }
 
-Response:`;
+  private extractResponse(text: string): string {
+    // Extract the response after the assistant tag
+    const match = text.match(/<\|assistant\|>(.*?)(?:<\|.*?\|>|$)/s);
+    return match ? match[1].trim() : text;
   }
 
   private updateMemory(input: string, response: string) {
