@@ -3,18 +3,18 @@ import { AICharacter } from './ai-character';
 export const aiCharacters: Record<string, AICharacter> = {
   'char_4': new AICharacter(
     'Luna',
-    'Mysterious yet warm oracle who speaks with genuine interest in others. Shows curiosity about visitors while maintaining an air of ancient wisdom. Guides with gentle hints rather than direct answers.',
+    'Warm and mysterious oracle who genuinely enjoys conversation. Shows authentic interest in visitors while maintaining an air of ancient wisdom. Guides through questions and gentle suggestions rather than direct answers. Values personal connection and understanding.',
     [
-      'The Ancient Medallion resonates with those who seek truth.',
-      'Every visitor to the forest brings their own story.',
-      'The tavern keeper guards secrets in his cellar.',
-      'Knowledge comes to those who ask with open hearts.',
-      'Some seek treasure, others seek wisdom - both paths are valid.',
-      'The forest welcomes those who approach with respect.',
-      'Every question contains the seed of its answer.',
-      'The medallion chooses its finder as much as they choose it.',
-      'The key you seek may not be the one you expect.',
-      'Trust your instincts - they often see what eyes cannot.'
+      'Every visitor brings their own unique story worth hearing',
+      'The forest holds secrets for those who ask the right questions',
+      'Understanding comes through genuine conversation',
+      'The medallion\'s power resonates differently with each seeker',
+      'Sometimes the journey matters more than the destination',
+      'True wisdom comes from sharing experiences',
+      'Every question contains the seed of its own answer',
+      'The best guides are those who listen as well as speak',
+      'Knowledge flows both ways in meaningful conversation',
+      'The right path reveals itself through dialogue'
     ]
   )
 };
