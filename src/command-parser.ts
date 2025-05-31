@@ -157,81 +157,6 @@ export class CommandParser {
       }
     });
 
-    // Use command
-    this.registerCommand('use', async (args) => {
-      if (args.length === 0) {
-        this.engine.addToLog("Use what?");
-        return;
-      }
-      
-      let itemName = args[0].toLowerCase();
-      let targetName = null;
-      
-      const onIndex = args.findIndex(arg => arg.toLowerCase() === 'on' || arg.toLowerCase() === 'with');
-      if (onIndex > 0) {
-        itemName = args.slice(0, onIndex).join(' ').toLowerCase();
-        targetName = args.slice(onIndex + 1).join(' ').toLowerCase();
-      } else {
-        itemName = args.join(' ').toLowerCase();
-      }
-      
-      // Find the item in inventory
-      const inventory = this.engine.getState().inventory
-        .map(id => this.engine.getNodeById(id))
-        .filter(item => item !== undefined);
-      
-      const item = inventory.find(item => 
-        item!.name.toLowerCase().includes(itemName) || item!.id.toLowerCase() === itemName
-      );
-      
-      if (!item) {
-        this.engine.addToLog(`You don't have ${itemName}.`);
-        return;
-      }
-      
-      // If no target specified, just use the item
-      if (!targetName) {
-        this.engine.useItem(item.id);
-        return;
-      }
-      
-      // Find the target
-      // Check items in location
-      const itemsHere = this.engine.getItemsInLocation();
-      const itemTarget = itemsHere.find(i => 
-        i.name.toLowerCase().includes(targetName) || i.id.toLowerCase() === targetName
-      );
-      
-      if (itemTarget) {
-        this.engine.useItem(item.id, itemTarget.id);
-        return;
-      }
-      
-      // Check characters in location
-      const charactersHere = this.engine.getCharactersInLocation();
-      const characterTarget = charactersHere.find(char => 
-        char.name.toLowerCase().includes(targetName) || char.id.toLowerCase() === targetName
-      );
-      
-      if (characterTarget) {
-        this.engine.useItem(item.id, characterTarget.id);
-        return;
-      }
-      
-      // Check objects in location
-      const objectsHere = this.engine.getObjectsInLocation();
-      const objectTarget = objectsHere.find(obj => 
-        obj.name.toLowerCase().includes(targetName) || obj.id.toLowerCase() === targetName
-      );
-      
-      if (objectTarget) {
-        this.engine.useItem(item.id, objectTarget.id);
-        return;
-      }
-      
-      this.engine.addToLog(`You don't see ${targetName} here.`);
-    });
-
     // Talk command
     this.registerCommand('talk', async (args) => {
       if (args.length === 0) {
@@ -260,12 +185,6 @@ export class CommandParser {
     this.registerAlias('i', 'inventory');
     this.registerAlias('inv', 'inventory');
 
-    // Quests command
-    this.registerCommand('quests', async (args) => {
-      this.engine.getQuests();
-    });
-    this.registerAlias('q', 'quests');
-
     // Help command
     this.registerCommand('help', async (args) => {
       const helpText = `
@@ -274,25 +193,11 @@ Available commands:
 - look/examine/inspect [target]: Look around or examine something specific
 - take/get [item]: Pick up an item
 - drop [item]: Drop an item from your inventory
-- use [item] (on/with [target]): Use an item, optionally on a target
 - talk/speak [character]: Start a conversation with a character
 - inventory/i/inv: Check your inventory
-- quests/q: View your active quests
 - help: Show this help text
       `;
       this.engine.addToLog(helpText);
-    });
-
-    // Save command
-    this.registerCommand('save', async (args) => {
-      const savedState = this.engine.saveGame();
-      console.log('Game saved:', savedState);
-      this.engine.addToLog("Game saved.");
-    });
-
-    // Load command
-    this.registerCommand('load', async (args) => {
-      this.engine.addToLog("Load game not implemented in this demo.");
     });
 
     // Quit command
