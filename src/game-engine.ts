@@ -71,7 +71,7 @@ export class GameEngine {
   }
 
   public addToLog(message: string): void {
-    if (this.gameEnded) return;
+    if (this.gameEnded) return; // Don't add more messages after game end
     this.state.gameLog.push(message);
     console.log(message);
   }
@@ -81,7 +81,7 @@ export class GameEngine {
   }
 
   public getConnectedLocations(): Node[] {
-    if (this.gameEnded) return [];
+    if (this.gameEnded) return []; // No movement after game end
     const locationEdges = this.edges.filter(edge => 
       edge.source === this.state.currentLocation && 
       this.getNodeById(edge.target)?.type === 'location'
@@ -120,16 +120,11 @@ export class GameEngine {
   }
 
   public getCharactersInLocation(): Node[] {
-    // Get characters with location status
     const charactersHere = this.characterStatus
-      .filter(status => 
-        status.attribute === 'location' && 
-        status.value === this.state.currentLocation
-      )
-      .map(status => status.character_id)
-      .map(id => this.getNodeById(id))
-      .filter((node): node is Node => node !== undefined);
-
+      .filter(status => status.attribute === 'location' && status.value === this.state.currentLocation)
+      .map(status => this.getNodeById(status.character_id))
+      .filter((node): node is Node => node !== undefined && node.type === 'character');
+    
     return charactersHere;
   }
 
