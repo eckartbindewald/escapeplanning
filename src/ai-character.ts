@@ -1,91 +1,436 @@
-import { pipeline } from '@xenova/transformers';
-import nlp from 'compromise';
+import { GameState, Node, Quest } from './types';
 import Sentiment from 'sentiment';
 
-export class AICharacter {
-  private context: string[] = [];
-  private maxMemory: number = 10;
-  private sentiment = new Sentiment();
-  private lastResponse: string = '';
-  private emotionalState: number = 0; // -1 to 1
-  private conversationTopics: Set<string> = new Set();
-  private emotiveActions = [
-    '*smiles warmly*',
-    '*gazes thoughtfully*',
-    '*listens intently*',
-    '*nods understandingly*',
-    '*leans forward with interest*'
-  ];
+// LLM interface for local AI models
+interface LLMInterface {
+  generateText(prompt: string, maxTokens?: number): Promise<string>;
+}
 
-  constructor(
-    private name: string,
-    private personality: string,
-    private knowledge: string[] = []
-  ) {
-    this.context = [...knowledge];
+// Local LLM implementation - to be replaced with actual implementation
+class LocalLLM implements LLMInterface {
+  private modelName: string;
+  
+  constructor(modelName: string = 'tinyllama') {
+    this.modelName = modelName;
   }
+  
+  async generateText(prompt: string, maxTokens: number = 100): Promise<string> {
+    // TODO: Implement actual connection to local LLM
+    // This is just a placeholder for now
+    console.log(`Generating text with ${this.modelName} model using prompt: ${prompt}`);
+    // In a real implementation, this would call the local LLM API
+    return `Response from ${this.modelName} (placeholder)`;
+  }
+}
+
+/**
+ * AICharacter class that uses a local LLM to generate responses
+ * This handles contextual dialogue generation for NPCs in the game
+ */
+export class AICharacter {
+  // Memory and conversation context
+  private context: string[] = [];
+  private maxMemory: number = 30;
+  private lastResponse: string = '';
+  private conversationCount: number = 0;
+  
+  // Game state integration
+  private gameState?: GameState;
+  private gameNodes?: Node[];
+  private gameQuests?: Quest[];
+  
+  // LLM for text generation
+  private llm: LLMInterface;
+  
+  // Sentiment analysis for emotion detection
+  private sentiment = new Sentiment();
+  private emotionalState: number = 0; // Range: -1 to 1
+  
+  // Emotive actions for character expression
+  private emotiveActions: string[] = [
+    '*smiles warmly*',
+    '*nods thoughtfully*',
+    '*tilts head curiously*',
+    '*pauses reflectively*',
+    '*gestures gently*',
+    '*gazes thoughtfully*',
+    '*eyes show interest*',
+    '*leans forward slightly*'
+  ];
+  
+  /**
+   * Creates a new AI character powered by a local LLM
+   * 
+   * @param name Character name
+   * @param personality Short description of personality traits
+   * @param knowledgeBase Array of facts/knowledge this character possesses
+   * @param modelName Name of the LLM to use (default: tinyllama)
+   */
+  constructor(
+    public name: string,
+    private personality: string,
+    private knowledgeBase: string[] = [],
+    modelName: string = 'tinyllama'
+  ) {
+    // Initialize the local LLM
+    this.llm = new LocalLLM(modelName);
+    
+    // Add knowledge to context
+    this.context = [...knowledgeBase];
+  }
+  
+  /**
+   * Update the character with current game state information
+   * This enables contextual responses based on game world information
+   */
+  updateGameData(gameState?: GameState, nodes?: Node[], quests?: Quest[]): void {
+    this.gameState = gameState;
+    this.gameNodes = nodes;
+    this.gameQuests = quests;
+  }
+  
+  /**
+   * Main method to generate a response to player input using a local LLM
+   */
+  async generateResponse(input: string): Promise<string> {
+    // Analyze sentiment
+    const sentimentResult = this.sentiment.analyze(input);
+    this.emotionalState = (this.emotionalState + sentimentResult.comparative) / 2;
+    
+    // Update conversation history
+    this.context.push(`Player: ${input}`);
+    
+    // Generate the prompt for the LLM
+    const prompt = this.createPrompt(input);
+    
+    // Get response from LLM
+    let response = await this.llm.generateText(prompt, 150);
+    
+    // Add an emotive action based on emotional state
+    response = this.addEmotiveAction(response);
+    
+    // Update conversation context with the response
+    this.lastResponse = response;
+    this.context.push(`${this.name}: ${response}`);
+    
+    // Limit context size
+    if (this.context.length > this.maxMemory) {
+      this.context = this.context.slice(-this.maxMemory);
+    }
+    
+    // Track conversation count
+    this.conversationCount++;
+    
+    // Apply emotional decay over time
+    if (this.conversationCount % 3 === 0) {
+      this.emotionalState *= 0.8; // Gradually return to neutral
+    }
+    
+    return response;
+  }
+  
+  /**
+   * Creates a detailed prompt for the LLM based on current context
+   */
+  private createPrompt(input: string): string {
+    // Build character description
+    let prompt = `You are ${this.name}, ${this.personality}. `;
+    
+    // Add current game state information if available
+    if (this.gameState) {
+      prompt += `The current location is ${this.gameState.currentLocation || 'unknown'}. `;
+      
+      // Add inventory information if available
+      if (this.gameState.inventory && this.gameState.inventory.length > 0) {
+        prompt += `The player has the following items: ${this.gameState.inventory.join(', ')}. `;
+      }
+    }
+    
+    // Add game nodes information if available
+    if (this.gameNodes && this.gameNodes.length > 0) {
+      // Extract characters at current location
+      const charactersNearby = this.gameNodes
+        .filter(node => node.type === 'character' && node.name && node.name !== this.name)
+        .map(char => char.name)
+        .filter(Boolean);
+      
+      if (charactersNearby.length > 0) {
+        prompt += `\nCharacters nearby: ${charactersNearby.join(', ')}. `;
+      }
+    }
+    
+    // Add quest information if available
+    if (this.gameQuests && this.gameQuests.length > 0) {
+      const activeQuests = this.gameQuests
+        .filter(quest => quest.title)
+        .map(quest => quest.title)
+        .filter(Boolean);
+      
+      if (activeQuests.length > 0) {
+        prompt += `\nActive quests: ${activeQuests.join(', ')}. `;
+      }
+    }
+    
+    // Add knowledge base facts that might be relevant
+    if (this.knowledgeBase.length > 0) {
+      prompt += `\nYou know the following facts:\n- ${this.knowledgeBase.join('\n- ')}\n`;
+    }
+    
+    // Add recent conversation context
+    if (this.context.length > 0) {
+      prompt += `\nRecent conversation history:\n${this.context.slice(-5).join('\n')}\n`;
+    }
+    
+    // Add final instruction
+    prompt += `\nPlayer: ${input}\n${this.name}: `;
+    
+    return prompt;
+  }
+  
+  /**
+   * Adds an emotive action to the response based on emotional state
+   */
+  private addEmotiveAction(response: string): string {
+    // Select a random emotive action
+    const randomIndex = Math.floor(Math.random() * this.emotiveActions.length);
+    const action = this.emotiveActions[randomIndex];
+    
+    // Add the action at the beginning or end of the response
+    return Math.random() > 0.5 ? `${action} ${response}` : `${response} ${action}`;
+  }
+}
 
   async generateResponse(input: string): Promise<string> {
-    // Analyze input
+    // Analyze input using NLP techniques
     const topics = this.extractTopics(input);
     const sentiment = this.analyzeSentiment(input);
-    const doc = nlp(input);
     
-    // Update emotional state
+    // Update emotional state based on sentiment analysis
     this.emotionalState = (this.emotionalState + sentiment.comparative) / 2;
     
-    // Track conversation context
-    this.context.push(`User: ${input}`);
-    topics.forEach(t => this.conversationTopics.add(t));
-
-    // Generate response based on analysis
+    // Track topics for context
+    if (topics.length > 0) {
+      // Update recent topics list
+      this.recentTopics = [topics[0], ...this.recentTopics.slice(0, this.maxTopics - 1)];
+      this.lastTopic = topics[0];
+    }
+    
+    // Generate appropriate response
     let response = '';
-
-    // Handle emotional states
-    if (sentiment.score < -1) {
-      response = this.generateEmpatheticResponse(input, sentiment);
-    } else if (doc.questions().length > 0) {
-      response = this.generateQuestionResponse(input, doc);
-    } else if (topics.some(t => this.knowledge.some(k => k.toLowerCase().includes(t)))) {
+    
+    // Handle questions with priority
+    if (input.includes('?')) {
+      const questionResponse = await this.handleQuestion(input, topics);
+      if (questionResponse) {
+        response = questionResponse;
+      }
+    } else if (this.hasRelevantGameKnowledge(topics)) {
+      response = this.generateGameKnowledgeResponse(topics);
+    } else if (sentiment.score < -1) {
+      response = this.generateEmpathicResponse(input, topics);
+    } else if (topics.some(t => this.knowledgeBase.some((k: string) => k.toLowerCase().includes(t)))) {
       response = this.generateKnowledgeResponse(topics);
     } else {
       response = this.generateContextualResponse(input, topics);
     }
-
-    // Add emotive action based on emotional state
-    const action = this.getEmotiveAction();
-    response = `${action} ${response}`;
-
-    // Update context
-    this.updateContext(response);
+    
+    // Add emotive action based on emotional state (30% chance)
+    if (Math.random() < 0.3) {
+      const action = this.getEmotiveAction();
+      response = `${action} ${response}`;
+    }
+    
+    // Store this as the last response to avoid repetition
+    this.lastResponse = response;
+    
+    // Update conversation context with input and response
+    this.updateContext(input, response);
     
     return response;
   }
 
   private extractTopics(input: string): string[] {
     const doc = nlp(input);
-    return doc.nouns().out('array')
-      .concat(doc.verbs().out('array'))
-      .filter(word => word.length > 3)
-      .map(w => w.toLowerCase());
+    const nouns = doc.nouns().out('array');
+    const verbs = doc.verbs().out('array');
+    const adjectives = doc.adjectives().out('array');
+    
+    const allTopics = [...nouns, ...verbs, ...adjectives]
+      .map(t => t.toLowerCase())
+      .filter(t => t.length > 2); // Filter out very short words
+    
+    // Remove duplicates
+    return [...new Set(allTopics)];
   }
 
-  private analyzeSentiment(input: string): Sentiment.AnalysisResult {
+  /**
+   * Determines if the AI has relevant game knowledge related to the conversation topics
+   */
+  private hasRelevantGameKnowledge(topics: string[]): boolean {
+    // Exit early if no topics or game state
+    if (!topics || topics.length === 0 || !this.gameState) {
+      return false;
+    }
+
+    // Check for location references
+    if (this.gameState.currentLocation && topics.some(t => 
+      this.gameState.currentLocation.toLowerCase().includes(t)
+    )) {
+      return true;
+    }
+    
+    // Check for character references - use optional chaining to handle possible undefined
+    if (this.gameNodes) {
+      const hasCharacterReference = this.gameNodes.some(n => 
+        n.type === 'character' && (
+          (n.name && topics.some(t => n.name.toLowerCase().includes(t))) || 
+          (n.description && topics.some(t => n.description.toLowerCase().includes(t)))
+        )
+      );
+      if (hasCharacterReference) {
+        return true;
+      }
+    }
+    
+    // Check for quest references - use optional chaining to handle possible undefined
+    if (this.gameQuests) {
+      const hasQuestReference = this.gameQuests.some(q => 
+        (q.title && topics.some(t => q.title.toLowerCase().includes(t))) || 
+        (q.description && topics.some(t => q.description.toLowerCase().includes(t)))
+      );
+      if (hasQuestReference) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  private generateGameKnowledgeResponse(topics: string[]): string {
+    // Return empty string if no game data is available
+    if (!this.gameState) {
+      return '';
+    }
+    
+    // Location information
+    if (this.gameState.currentLocation && topics.some(t => 
+      this.gameState.currentLocation.toLowerCase().includes(t)
+    )) {
+      return `We are currently in ${this.gameState.currentLocation}. What draws you to this place?`;
+    }
+    
+    // Character information
+    const characterData = this.gameNodes?.find(n => 
+      n.type === 'character' && n.name && topics.some(t => n.name.toLowerCase().includes(t))
+    );
+    if (characterData && characterData.name) {
+      return `${characterData.name}... ${characterData.description || ''} Have you spoken with them lately?`;
+    }
+    
+    // Quest information
+    const questData = this.gameQuests?.find(q => 
+      q.title && topics.some(t => q.title.toLowerCase().includes(t))
+    );
+    if (questData && questData.title) {
+      return `The quest for ${questData.title}... ${questData.description || ''} What progress have you made?`;
+    }
+    
+    // Item information
+    const playerInventory = this.gameState?.inventory && this.gameNodes ? 
+      this.gameState.inventory.map(id => 
+        this.gameNodes.find(n => n.id === id)
+      ).filter(Boolean) : [];
+    
+    const matchedItem = playerInventory.find(item => 
+      item && topics.some(t => 
+        (item.name?.toLowerCase().includes(t) || item.description?.toLowerCase().includes(t))
+      )
+    );
+    
+    if (matchedItem && matchedItem.name) {
+      return `The ${matchedItem.name} you carry... ${matchedItem.description || ''} I sense it has significance to your journey.`;
+    }
+    
+    return this.generateContextualResponse('', topics);
+  }
+
+  private analyzeSentiment(input: string): { score: number, comparative: number } {
     return this.sentiment.analyze(input);
   }
 
-  private generateEmpatheticResponse(input: string, sentiment: Sentiment.AnalysisResult): string {
-    if (input.toLowerCase().includes('sad')) {
-      return "I hear the sadness in your words. Would you like to talk about what's troubling you?";
-    }
-    if (input.toLowerCase().includes('angry') || sentiment.score < -2) {
-      return "I sense your frustration. Sometimes sharing our thoughts can help us see things differently. What's on your mind?";
-    }
-    return "I feel there's something deeper in your words. Would you like to explore that together?";
+  private generateEmpathicResponse(input: string, topics: string[]): string {
+    // More varied empathetic responses
+    const responses = [
+      `I sense this troubles you. Would you like to share more about what's on your mind?`,
+      `Your feelings are completely valid. Would talking more about this help you?`,
+      `I understand this may be difficult. What support would be most helpful right now?`,
+      `Sometimes expressing these thoughts can help lighten the burden. I'm here to listen.`,
+      `Thank you for sharing something so personal. Would you like to explore this further?`,
+      `I hear the weight in your words. How long have you been feeling this way?`,
+      `Your perspective matters greatly. Would you tell me more about what led to these feelings?`,
+      `In moments like these, it's important to acknowledge your experiences. What else would you like to share?`,
+      `I appreciate your honesty. These feelings are part of your journey - how are you managing them?`,
+      `Your words carry deep meaning. Is there something specific you'd like to explore about this?`
+    ];
+    
+    // Avoid repetition
+    const filteredResponses = responses.filter(r => r !== this.lastResponse);
+    if (filteredResponses.length === 0) return responses[0];
+    
+    return filteredResponses[Math.floor(Math.random() * filteredResponses.length)];
   }
 
-  private generateQuestionResponse(input: string, doc: any): string {
-    const questionWords = doc.match('(what|why|how|where|when|who)').out('array');
+  /**
+   * Handles different types of questions based on question words
+   */
+  private async handleQuestion(input: string, topics: string[]): Promise<string | null> {
+    // Check for specific question types
+    const questionWords = nlp(input).match('(what|why|how|where|when|who)').out('array');
+    
+    // Location questions
+    if (questionWords.includes('where') && this.gameState) {
+      const currentLocation = this.gameNodes ? this.gameNodes.find(n => n.id === this.gameState?.currentLocation) : undefined;
+      if (currentLocation && currentLocation.name) {
+        return `We are currently in ${currentLocation.name}. ${currentLocation.description || ''} Is there something specific about this place that interests you?`;
+      }
+    }
+    
+    // Character-related questions
+    if ((questionWords.includes('who') || questionWords.includes('what')) && 
+        topics.some(t => t === 'you' || t === 'yourself')) {
+      return `I am ${this.name}, ${this.personality}. I've been watching the events unfold in this world for quite some time. What else would you like to know about me?`;
+    }
+    
+    // Questions about other characters
+    const characterTopics = this.gameNodes ? topics.filter(t => 
+      this.gameNodes.some(n => n.type === 'character' && n.name.toLowerCase().includes(t))
+    ) : [];
+    
+    if (characterTopics.length > 0 && this.gameNodes) {
+      const characterData = this.gameNodes?.find(n => 
+        n.type === 'character' && n.name && topics.some(t => n.name.toLowerCase().includes(t))
+      );
+      
+      if (characterData && characterData.name) {
+        return `You ask about ${characterData.name}. ${characterData.description || ''} Our paths have crossed before. What specifically do you want to know?`;
+      }
+    }
+    
+    // Questions about quests
+    if ((questionWords.includes('what') || questionWords.includes('how')) && 
+        topics.some(t => t === 'quest' || t === 'mission' || t === 'task')) {
+      if (this.gameQuests && this.gameQuests.length > 0) {
+        const activeQuests = this.gameState?.currentQuests ? Object.values(this.gameState.currentQuests) : [];
+        if (activeQuests.length > 0) {
+          const quest = activeQuests[0];
+          return `You're currently pursuing ${quest.title || 'a quest'}. ${quest.description || ''} How are you progressing with this task?`;
+        } else {
+          return `I sense there are tasks waiting to be discovered. Have you spoken with the villagers? They often need assistance.`;
+        }
+      }
+    }
+    
+    // Original responses for why and how questions as fallback
     if (questionWords.includes('why')) {
       return "That's a thoughtful question. Let's explore it together - what are your thoughts on this?";
     }
@@ -96,42 +441,106 @@ export class AICharacter {
   }
 
   private generateKnowledgeResponse(topics: string[]): string {
-    const relevantKnowledge = this.knowledge.filter(k => 
+    // Find knowledge related to topics
+    const relevantKnowledge = this.knowledgeBase.filter((k: string) => 
       topics.some(t => k.toLowerCase().includes(t))
     );
-    if (relevantKnowledge.length > 0) {
-      const knowledge = relevantKnowledge[Math.floor(Math.random() * relevantKnowledge.length)];
-      return `${knowledge}. What are your thoughts on this?`;
+    
+    if (relevantKnowledge.length === 0) {
+      return '';
     }
-    return this.generateContextualResponse('', topics);
+    
+    // Select a random piece of knowledge
+    const knowledge = relevantKnowledge[Math.floor(Math.random() * relevantKnowledge.length)];
+    
+    // Format the response with the knowledge
+    const templates = [
+      `I believe that ${knowledge.toLowerCase()}. What do you think about that?`,
+      `I once learned that ${knowledge.toLowerCase()}. Does that resonate with you?`,
+      `In my understanding, ${knowledge.toLowerCase()}. How does that align with your perspective?`,
+      `I've contemplated that ${knowledge.toLowerCase()}. Have you considered this?`,
+      `My experiences suggest that ${knowledge.toLowerCase()}. Does this match your experience?`,
+      `I've observed that ${knowledge.toLowerCase()}. How does this align with your journey?`,
+      `The wise ones taught me that ${knowledge.toLowerCase()}. Do you find wisdom in these words?`,
+      `I've come to understand that ${knowledge.toLowerCase()}. What has your experience shown you?`
+    ];
+    
+    // Avoid returning the same response twice
+    const filteredTemplates = templates.filter(t => t !== this.lastResponse);
+    return filteredTemplates[Math.floor(Math.random() * filteredTemplates.length)];
+  }
+
+  private getAlternativeResponses(topics: string[]): string[] | null {
+    // Check if we have specific responses for any topic
+    for (const topic of topics) {
+      if (this.characterResponses[topic]) {
+        return this.characterResponses[topic];
+      }
+    }
+    
+    // Return null if no matching topic responses found
+    return null;
   }
 
   private generateContextualResponse(input: string, topics: string[]): string {
+    // Try to use character-specific responses first
+    const alternativeResponses = this.getAlternativeResponses(topics);
+    if (alternativeResponses && alternativeResponses.length > 0) {
+      return alternativeResponses[Math.floor(Math.random() * alternativeResponses.length)];
+    }
+    
+    // Check conversation history for context
+    const recentContext = this.context.slice(-10);
+    const userMessages = recentContext.filter(msg => msg.startsWith('User:'));
+    
+    if (userMessages.length > 1) {
+      // Generate responses that reference previous messages
+      const responses = [
+        `You mentioned earlier about ${this.lastTopic || 'your journey'}. How does that connect with what we're discussing now?`,
+        `I'm curious how this relates to what you shared before. Would you like to elaborate?`,
+        `This conversation reminds me of our earlier discussion. How do you see these topics connecting?`,
+        `As we explore this topic, I wonder how it affects your current quest?`,
+        `Your thoughts seem to be evolving as we talk. Where do you see this path leading you?`
+      ];
+      
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+    
+    // Default contextual responses if no conversation history
     const responses = [
-      "I sense there's more to your story. What brought you to this point?",
-      "Your perspective intrigues me. How did you come to see things this way?",
-      "There's wisdom in your words. Would you share more of your thoughts?",
-      "I find your view fascinating. What experiences shaped this understanding?",
-      "Your journey seems to hold many stories. Which would you like to share?"
+      "I sense there's more to your story. What events have led you to this point?",
+      "Your perspective intrigues me. How did you come to view things this way?",
+      "There's wisdom in your words. Would you share more about your experiences?",
+      "I find myself drawn to your journey. What challenges have you faced along the way?",
+      "Your path seems to hold many untold stories. Which would you care to share?",
+      "The threads of fate weave curiously around you. What do you seek on this journey?",
+      "There are patterns in our conversation that reveal much about your quest. Where do you hope it leads?",
+      "I'm curious about what drives you forward. What motivates you to continue?",
+      "Behind your words, I sense deeper meanings. What truly matters to you in this world?",
+      "The choices we make shape our destiny. What choice weighs on your mind currently?"
     ];
-    return responses[Math.floor(Math.random() * responses.length)];
+    
+    // Avoid returning the same response twice
+    let filteredResponses = responses.filter(r => r !== this.lastResponse);
+    if (filteredResponses.length === 0) filteredResponses = responses;
+    
+    return filteredResponses[Math.floor(Math.random() * filteredResponses.length)];
   }
 
   private getEmotiveAction(): string {
-    if (this.emotionalState < -0.5) {
-      return '*listening with deep empathy*';
+    let emotionType: EmotionState;
+    
+    // Determine emotional state category
+    if (this.emotionalState > 0.3) {
+      emotionType = 'positive';
+    } else if (this.emotionalState < -0.3) {
+      emotionType = 'empathetic';
+    } else {
+      emotionType = 'neutral';
     }
-    if (this.emotionalState > 0.5) {
-      return '*smiling warmly*';
-    }
-    return this.emotiveActions[Math.floor(Math.random() * this.emotiveActions.length)];
-  }
-
-  private updateContext(response: string) {
-    this.context.push(`${this.name}: ${response}`);
-    if (this.context.length > this.maxMemory) {
-      this.context = [...this.knowledge, ...this.context.slice(-this.maxMemory)];
-    }
-    this.lastResponse = response;
+    
+    // Get appropriate action set and select one randomly
+    const actions = this.emotiveActions[emotionType];
+    return actions[Math.floor(Math.random() * actions.length)];
   }
 }
