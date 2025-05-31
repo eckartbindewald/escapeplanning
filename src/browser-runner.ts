@@ -28,16 +28,24 @@ export class BrowserRunner {
     // Clear any existing content
     this.outputEl.innerHTML = '';
     
-    // Show loading message
-    this.print('Loading game...');
+    // Show detailed loading message
+    this.print('Initializing game...');
+    this.print('Downloading AI model (this may take a few minutes)...');
+    this.print('Please wait while the game loads...');
     
     try {
       await this.engine.initialize();
       this.renderLocation();
       this.renderLog();
+      
+      // Enable input once loaded
+      this.inputEl.disabled = false;
+      this.buttonEl.disabled = false;
+      
     } catch (error) {
       console.error('Error starting game:', error);
-      this.print('Error starting game. Please refresh the page to try again.');
+      this.print('Error loading game. Please try refreshing the page.');
+      this.print(`Error details: ${error.message}`);
     }
   }
 
@@ -94,12 +102,4 @@ export class BrowserRunner {
     this.outputEl.innerHTML = logHtml;
     this.outputEl.scrollTop = this.outputEl.scrollHeight;
   }
-}
-
-// If running in browser, auto-initialize
-if (typeof window !== 'undefined') {
-  window.addEventListener('DOMContentLoaded', () => {
-    const runner = new BrowserRunner('game-output', 'game-input', 'game-button');
-    runner.start();
-  });
 }
