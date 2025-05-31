@@ -507,13 +507,6 @@ export class GameEngine {
       return false;
     }
 
-    // Add exit command
-    if (input.toLowerCase() === 'exit' || input.toLowerCase() === 'bye' || input.toLowerCase() === 'goodbye') {
-      this.addToLog("You end the conversation.");
-      this.state.currentDialog = null;
-      return true;
-    }
-
     const character = this.getNodeById(this.state.currentDialog.npc_id);
     if (!character) {
       this.addToLog("The conversation ends.");
@@ -620,6 +613,16 @@ export class GameEngine {
 
     this.addToLog("That's not a valid response.");
     return false;
+  }
+
+  public endDialog(): void {
+    if (this.state.currentDialog) {
+      const character = this.getNodeById(this.state.currentDialog.npc_id);
+      if (character) {
+        this.addToLog(`You end your conversation with ${character.name}.`);
+      }
+      this.state.currentDialog = null;
+    }
   }
 
   public getInventory(): string {
