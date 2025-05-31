@@ -459,6 +459,13 @@ export class GameEngine {
     const selectedResponse = this.state.currentDialog.responses[responseIndex];
     this.addToLog(`You: "${selectedResponse.text}"`);
     
+    // Check if this is the medallion completion dialog
+    if (selectedResponse.next_id === 'dialog_12' && !this.state.inventory.includes('item_4')) {
+      this.addToLog("You don't have the Ancient Medallion.");
+      return false;
+    }
+    
+    // Find next dialog node
     const nextDialog = this.dialogs.find(dialog => dialog.id === selectedResponse.next_id);
     if (!nextDialog) {
       this.addToLog("The conversation ends.");
@@ -466,6 +473,24 @@ export class GameEngine {
       return true;
     }
     
+    // Handle medallion quest completion
+    if (nextDialog.id === 'dialog_12' && this.state.inventory.includes('item_4')) {
+      // Remove medallion from inventory
+      this.state.inventory = this.state.inventory.filter(id => id !== 'item_4');
+      
+      // Complete the quest
+      this.completeQuest('quest_4');
+      
+      // Show victory message after dialog
+      setTimeout(() => {
+        this.addToLog('\n=== Congratulations! ===');
+        this.addToLog('You have completed the Ancient Medallion quest!');
+        this.addToLog('You receive: 100 Gold and 200 XP');
+        this.addToLog('Thank you for playing!\n');
+      }, 1000);
+    }
+    
+    // Get character name
     const character = this.getNodeById(nextDialog.npc_id);
     if (character) {
       this.addToLog(`${character.name}: "${nextDialog.text}"`);
@@ -473,14 +498,17 @@ export class GameEngine {
       this.addToLog(`"${nextDialog.text}"`);
     }
     
+    // Update current dialog
     this.state.currentDialog = nextDialog;
     
+    // Show response options
     if (nextDialog.responses && nextDialog.responses.length > 0) {
       this.addToLog("You can respond with:");
       nextDialog.responses.forEach((response, index) => {
         this.addToLog(`${index + 1}. ${response.text}`);
       });
     } else {
+      // End conversation if no responses
       this.state.currentDialog = null;
       this.addToLog("The conversation ends.");
     }
