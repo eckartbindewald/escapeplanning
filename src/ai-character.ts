@@ -1,7 +1,7 @@
-import { Pipeline } from '@xenova/transformers';
+import { pipeline } from '@xenova/transformers';
 
 export class AICharacter {
-  private pipeline: Pipeline | null = null;
+  private pipeline: any = null;
   private context: string[] = [];
   private maxMemory: number = 10;
 
@@ -14,9 +14,8 @@ export class AICharacter {
   }
 
   async initialize() {
-    this.pipeline = await Pipeline.fromPreset('text-generation', {
-      quantized: true,
-      model: 'TinyLlama/TinyLlama-1.1B-Chat-v1.0'
+    this.pipeline = await pipeline('text-generation', 'TinyLlama/TinyLlama-1.1B-Chat-v1.0', {
+      quantized: true
     });
   }
 
@@ -26,7 +25,7 @@ export class AICharacter {
     }
 
     const prompt = this.buildPrompt(input);
-    const result = await this.pipeline!.generate(prompt, {
+    const result = await this.pipeline(prompt, {
       max_new_tokens: 100,
       temperature: 0.7
     });
