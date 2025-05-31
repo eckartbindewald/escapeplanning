@@ -40,5 +40,22 @@ export const dialogs: DialogNode[] = [
   { id: 'dialog_12', npc_id: 'char_2', parent_id: 'dialog_5', text: "You found it? Let me see! *examines the medallion* Incredible! You actually found it! As promised, here's your reward - 100 gold pieces and my eternal gratitude!", responses: [
     { text: "Thank you", next_id: "dialog_13" }
   ] },
-  { id: 'dialog_13', npc_id: 'char_2', parent_id: 'dialog_12', text: "*carefully wraps the medallion* This will make a fine addition to my collection. You've done well, adventurer.", responses: [] }
+  { id: 'dialog_13', npc_id: 'char_2', parent_id: 'dialog_12', text: "*carefully wraps the medallion* This will make a fine addition to my collection. You've done well, adventurer.", responses: [] },
+  { id: 'dialog_14', npc_id: 'char_3', parent_id: null, text: "*Shadowpaw's eyes gleam with intelligence* Meow... You seek the key to the cellar, don't you?", responses: [
+    { text: "Yes, I'm looking for it", next_id: "dialog_15" },
+    { text: "How did you know?", next_id: "dialog_16" },
+    { text: "Just passing by", next_id: "dialog_17" }
+  ] },
+  { id: 'dialog_15', npc_id: 'char_3', parent_id: 'dialog_14', text: "I've seen it glinting in the moonlight. Look around the forest's edge, where shadows meet light.", responses: [
+    { text: "Thank you for the hint", next_id: "dialog_18" }
+  ] },
+  { id: 'dialog_16', npc_id: 'char_3', parent_id: 'dialog_14', text: "*purrs mysteriously* We cats see many things. The tavern keeper's troubles echo in whispers through the village.", responses: [
+    { text: "Can you help me find it?", next_id: "dialog_15" },
+    { text: "Interesting...", next_id: "dialog_17" }
+  ] },
+  { id: 'dialog_17', npc_id: 'char_3', parent_id: 'dialog_14', text: "*flicks tail knowingly* Sometimes the most valuable treasures are found when we're 'just passing by'...", responses: [
+    { text: "Tell me more", next_id: "dialog_15" },
+    { text: "Goodbye", next_id: "dialog_18" }
+  ] },
+  { id: 'dialog_18', npc_id: 'char_3', parent_id: 'dialog_14', text: "*disappears into the shadows, leaving you with much to ponder*", responses: [] }
 ];
