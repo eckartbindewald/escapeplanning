@@ -11,6 +11,7 @@ import {
   NodeType
 } from './types';
 import { loadGameData } from './data-loader';
+import { aiCharacters } from './ai-characters';
 
 export class GameEngine {
   private nodes: Node[] = [];
@@ -438,7 +439,7 @@ export class GameEngine {
     return description;
   }
 
-  public talkTo(characterId: string): boolean {
+  public async talkTo(characterId: string): Promise<boolean> {
     if (this.gameEnded) {
       this.addToLog("The game has ended. Thanks for playing!");
       return false;
@@ -455,7 +456,34 @@ export class GameEngine {
       this.addToLog("That character isn't here.");
       return false;
     }
+
+    // Handle AI characters
+    if (character.subtype === 'aic') {
+      const aiCharacter = aiCharacters[characterId];
+      if (!aiCharacter) {
+        this.addToLog(`${character.name} doesn't seem interested in talking.`);
+        return false;
+      }
+
+      try {
+        const response = await aiCharacter.generateResponse("Hello");
+        this.addToLog(`${character.name}: "${response}"`);
+        this.state.currentDialog = {
+          id: 'ai_dialog',
+          npc_id: characterId,
+          parent_id: null,
+          text: response,
+          responses: [{ text: "Continue...", next_id: "ai_dialog" }]
+        };
+        return true;
+      } catch (error) {
+        console.error('AI character response error:', error);
+        this.addToLog(`${character.name} remains silent.`);
+        return false;
+      }
+    }
     
+    // Handle regular NPCs
     const startingDialog = this.dialogs.find(dialog => 
       dialog.npc_id === characterId && dialog.parent_id === null
     );
@@ -478,13 +506,53 @@ export class GameEngine {
     return true;
   }
 
-  public respondToDialog(responseIndex: number): boolean {
+  public async respondToDialog(responseIndex: number): Promise<boolean> {
     if (this.gameEnded) {
       this.addToLog("The game has ended. Thanks for playing!");
       return false;
     }
     
-    if (!this.state.currentDialog || !this.state.currentDialog.responses) {
+    if (!this.state.currentDialog) {
+      this.addToLog("You're not in a conversation.");
+      return false;
+    }
+
+    // Handle AI character dialog
+    if (this.state.currentDialog.id === 'ai_dialog') {
+      const character = this.getNodeById(this.state.currentDialog.npc_id);
+      if (!character || character.subtype !== 'aic') {
+        this.addToLog("The conversation ends.");
+        this.state.currentDialog = null;
+        return false;
+      }
+
+      const aiCharacter = aiCharacters[character.id];
+      if (!aiCharacter) {
+        this.addToLog("The conversation ends.");
+        this.state.currentDialog = null;
+        return false;
+      }
+
+      try {
+        const response = await aiCharacter.generateResponse("Tell me more");
+        this.addToLog(`${character.name}: "${response}"`);
+        this.state.currentDialog = {
+          id: 'ai_dialog',
+          npc_id: character.id,
+          parent_id: null,
+          text: response,
+          responses: [{ text: "Continue...", next_id: "ai_dialog" }]
+        };
+        return true;
+      } catch (error) {
+        console.error('AI character response error:', error);
+        this.addToLog(`${character.name} falls silent.`);
+        this.state.currentDialog = null;
+        return false;
+      }
+    }
+    
+    if (!this.state.currentDialog.responses) {
       this.addToLog("You're not in a conversation.");
       return false;
     }
