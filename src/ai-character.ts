@@ -15,10 +15,7 @@ export class AICharacter {
 
   async initialize() {
     try {
-      this.pipeline = await pipeline('text-generation', 'Xenova/tiny-llama-1.1b-chat-v0.1', {
-        quantized: true,
-        revision: 'main'
-      });
+      this.pipeline = await pipeline('text-generation', 'Xenova/gpt2');
     } catch (error) {
       console.error('Failed to initialize pipeline:', error);
       throw new Error('Failed to initialize AI character');
@@ -33,12 +30,13 @@ export class AICharacter {
     try {
       const prompt = this.buildPrompt(input);
       const result = await this.pipeline(prompt, {
-        max_new_tokens: 100,
+        max_new_tokens: 50,
         temperature: 0.7,
-        do_sample: true
+        do_sample: true,
+        pad_token_id: 50256
       });
 
-      const response = this.extractResponse(result[0].generated_text);
+      const response = this.cleanResponse(result[0].generated_text);
       this.updateMemory(input, response);
 
       return response;
@@ -49,17 +47,28 @@ export class AICharacter {
   }
 
   private buildPrompt(input: string): string {
-    return `<|system|>You are ${this.name}, ${this.personality}</|system|>
-
-<|user|>${input}</|user|>
-
-<|assistant|>`;
+    const contextStr = this.context.slice(-4).join('\n');
+    return `${this.name} is ${this.personality}\n\nContext:\n${contextStr}\n\nUser: ${input}\n${this.name}:`;
   }
 
-  private extractResponse(text: string): string {
-    // Extract the response after the assistant tag
-    const match = text.match(/<\|assistant\|>(.*?)(?:<\|.*?\|>|$)/s);
-    return match ? match[1].trim() : text;
+  private cleanResponse(text: string): string {
+    // Extract the response after the character name
+    const parts = text.split(`${this.name}:`);
+    if (parts.length > 1) {
+      // Take the last response and clean it up
+      let response = parts[parts.length - 1].trim();
+      
+      // Remove any trailing dialogue or system text
+      response = response.split('\n')[0];
+      
+      // Ensure the response is not too long
+      if (response.length > 100) {
+        response = response.substring(0, 100) + '...';
+      }
+      
+      return response;
+    }
+    return text;
   }
 
   private updateMemory(input: string, response: string) {
