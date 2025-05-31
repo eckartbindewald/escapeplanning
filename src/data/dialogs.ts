@@ -15,6 +15,7 @@ export const dialogs: DialogNode[] = [
   { id: 'dialog_5', npc_id: 'char_2', parent_id: null, text: "*grumbles* What do you want? I'm busy.", responses: [
     { text: "I'd like a drink", next_id: "dialog_6" },
     { text: "Tell me about this place", next_id: "dialog_7" },
+    { text: "I have the Ancient Medallion", next_id: "dialog_12" },
     { text: "I heard about a medallion", next_id: "dialog_10" },
     { text: "Nothing, sorry to bother you", next_id: "dialog_8" }
   ] },
@@ -35,5 +36,9 @@ export const dialogs: DialogNode[] = [
   ] },
   { id: 'dialog_11', npc_id: 'char_2', parent_id: 'dialog_10', text: "Good. You'll need to find the key first - I lost it somewhere. Last I heard, someone near the forest found something interesting...", responses: [
     { text: "I'll start looking", next_id: "dialog_8" }
-  ] }
+  ] },
+  { id: 'dialog_12', npc_id: 'char_2', parent_id: 'dialog_5', text: "You found it? Let me see! *examines the medallion* Incredible! You actually found it! As promised, here's your reward - 100 gold pieces and my eternal gratitude!", responses: [
+    { text: "Thank you", next_id: "dialog_13" }
+  ] },
+  { id: 'dialog_13', npc_id: 'char_2', parent_id: 'dialog_12', text: "*carefully wraps the medallion* This will make a fine addition to my collection. You've done well, adventurer.", responses: [] }
 ];
