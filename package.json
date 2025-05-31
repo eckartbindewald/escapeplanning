@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@xenova/transformers": "^2.6.1",
     "typescript": "^5.0.4",
     "vite": "^4.3.9"
   }
