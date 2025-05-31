@@ -24,7 +24,6 @@ export class GameEngine {
   private state: GameState;
   
   constructor() {
-    // Initialize an empty game state
     this.state = {
       currentLocation: '',
       inventory: [],
@@ -35,7 +34,6 @@ export class GameEngine {
     };
   }
 
-  // Load all game data
   public async initialize(startLocation: string = 'loc_1'): Promise<void> {
     const data = loadGameData();
     this.nodes = data.nodes;
@@ -47,22 +45,18 @@ export class GameEngine {
     this.dialogs = data.dialogs || [];
     this.quests = data.quests || [];
     
-    // Set starting location
     this.state.currentLocation = startLocation;
     this.addToLog(`You find yourself in ${this.getNodeById(startLocation)?.name || 'an unknown location'}.`);
   }
   
-  // Get the current game state
   public getState(): GameState {
     return { ...this.state };
   }
 
-  // Save the game state
   public saveGame(): string {
     return JSON.stringify(this.state);
   }
 
-  // Load a saved game state
   public loadGame(savedState: string): void {
     try {
       this.state = JSON.parse(savedState);
@@ -71,18 +65,15 @@ export class GameEngine {
     }
   }
 
-  // Add message to game log
   public addToLog(message: string): void {
     this.state.gameLog.push(message);
-    console.log(message); // Also output to console for debugging
+    console.log(message);
   }
 
-  // Get a node by its ID
   public getNodeById(id: string): Node | undefined {
     return this.nodes.find(node => node.id === id);
   }
 
-  // Get all connected locations from current location
   public getConnectedLocations(): Node[] {
     const locationEdges = this.edges.filter(edge => 
       edge.source === this.state.currentLocation && 
@@ -93,7 +84,6 @@ export class GameEngine {
       .filter((node): node is Node => node !== undefined);
   }
 
-  // Move to a connected location
   public moveToLocation(locationId: string): boolean {
     const connectedLocations = this.getConnectedLocations();
     const targetLocation = connectedLocations.find(loc => loc.id === locationId);
@@ -108,7 +98,6 @@ export class GameEngine {
     return true;
   }
 
-  // Get all items in the current location
   public getItemsInLocation(): Node[] {
     const itemsHere = this.itemStatus
       .filter(status => status.attribute === 'location' && status.value === this.state.currentLocation)
@@ -118,26 +107,28 @@ export class GameEngine {
     return itemsHere;
   }
 
-  // Get all characters in the current location
   public getCharactersInLocation(): Node[] {
-    const charactersHere = this.characterStatus
+    // Get characters with explicit location status
+    const charactersWithStatus = this.characterStatus
       .filter(status => status.attribute === 'location' && status.value === this.state.currentLocation)
       .map(status => this.getNodeById(status.character_id))
       .filter((node): node is Node => node !== undefined && node.type === 'character');
     
-    const characterNodes = this.nodes.filter(node => 
+    // Get characters without location status (static NPCs)
+    const staticCharacters = this.nodes.filter(node => 
       node.type === 'character' && 
-      !this.characterStatus.some(status => 
-        status.character_id === node.id && 
-        status.attribute === 'location' && 
-        status.value !== this.state.currentLocation
-      )
+      !this.characterStatus.some(status => status.character_id === node.id)
     );
     
-    return [...charactersHere, ...characterNodes];
+    // Combine and deduplicate characters
+    const allCharacters = [...charactersWithStatus, ...staticCharacters];
+    const uniqueCharacters = allCharacters.filter((char, index) => 
+      allCharacters.findIndex(c => c.id === char.id) === index
+    );
+    
+    return uniqueCharacters;
   }
 
-  // Get all objects in the current location
   public getObjectsInLocation(): Node[] {
     return this.nodes.filter(node => 
       node.type === 'object' && 
@@ -148,14 +139,12 @@ export class GameEngine {
     );
   }
 
-  // Look around the current location
   public lookAround(): string {
     const location = this.getNodeById(this.state.currentLocation);
     if (!location) return "You're lost in an unknown place.";
     
     let description = `${location.name}: ${location.description}\n`;
     
-    // List exits
     const exits = this.getConnectedLocations();
     if (exits.length > 0) {
       description += "\nExits lead to:\n";
@@ -166,7 +155,6 @@ export class GameEngine {
       description += "\nThere are no visible exits.\n";
     }
     
-    // List items
     const items = this.getItemsInLocation();
     if (items.length > 0) {
       description += "\nYou can see:\n";
@@ -175,7 +163,6 @@ export class GameEngine {
       });
     }
     
-    // List characters
     const characters = this.getCharactersInLocation();
     if (characters.length > 0) {
       description += "\nCharacters here:\n";
@@ -184,7 +171,6 @@ export class GameEngine {
       });
     }
     
-    // List objects
     const objects = this.getObjectsInLocation();
     if (objects.length > 0) {
       description += "\nObjects of interest:\n";
@@ -197,7 +183,6 @@ export class GameEngine {
     return description;
   }
 
-  // Take an item
   public takeItem(itemId: string): boolean {
     const itemsHere = this.getItemsInLocation();
     const item = itemsHere.find(i => i.id === itemId);
@@ -207,7 +192,6 @@ export class GameEngine {
       return false;
     }
     
-    // Update item location to inventory
     const itemStatusIndex = this.itemStatus.findIndex(
       status => status.item_id === itemId && status.attribute === 'location'
     );
@@ -223,7 +207,6 @@ export class GameEngine {
       });
     }
     
-    // Add to inventory list
     if (!this.state.inventory.includes(itemId)) {
       this.state.inventory.push(itemId);
     }
@@ -232,7 +215,6 @@ export class GameEngine {
     return true;
   }
 
-  // Drop an item
   public dropItem(itemId: string): boolean {
     if (!this.state.inventory.includes(itemId)) {
       this.addToLog("You don't have that item.");
@@ -245,7 +227,6 @@ export class GameEngine {
       return false;
     }
     
-    // Update item location to current location
     const itemStatusIndex = this.itemStatus.findIndex(
       status => status.item_id === itemId && status.attribute === 'location'
     );
@@ -261,16 +242,13 @@ export class GameEngine {
       });
     }
     
-    // Remove from inventory
     this.state.inventory = this.state.inventory.filter(id => id !== itemId);
     
     this.addToLog(`You drop the ${item.name}.`);
     return true;
   }
 
-  // Use an item
   public useItem(itemId: string, targetId?: string): boolean {
-    // Check if player has the item
     if (!this.state.inventory.includes(itemId)) {
       this.addToLog("You don't have that item.");
       return false;
@@ -279,19 +257,15 @@ export class GameEngine {
     const item = this.getNodeById(itemId);
     if (!item) return false;
     
-    // Get item attributes
     const attributes = this.itemAttributes.filter(attr => attr.item_id === itemId);
     
-    // Handle different item types
     if (item.subtype === 'potion') {
       const healAmount = attributes.find(attr => attr.attribute === 'heal_amount');
       if (healAmount && typeof healAmount.value === 'number') {
-        // Apply healing
         const currentHealth = Number(this.state.playerStats.health) || 0;
         this.state.playerStats.health = Math.min(100, currentHealth + healAmount.value);
         this.addToLog(`You drink the ${item.name} and feel revitalized. Health: ${this.state.playerStats.health}/100`);
         
-        // Remove from inventory after use
         this.state.inventory = this.state.inventory.filter(id => id !== itemId);
         return true;
       }
@@ -303,18 +277,15 @@ export class GameEngine {
       }
       
       if (target.type === 'object' && target.subtype === 'door') {
-        // Check if key can unlock door
         const canUnlock = attributes.find(attr => attr.attribute === 'unlock' && attr.value === true);
         if (canUnlock) {
           this.addToLog(`You use the ${item.name} to unlock the ${target.name}.`);
           
-          // Create a new edge between the connected rooms
           const doorEdges = this.edges.filter(edge => edge.source === targetId || edge.target === targetId);
           if (doorEdges.length >= 2) {
             const room1 = doorEdges[0].source === targetId ? doorEdges[0].target : doorEdges[0].source;
             const room2 = doorEdges[1].source === targetId ? doorEdges[1].target : doorEdges[1].source;
             
-            // Add edges between rooms in both directions
             if (!this.edges.some(edge => edge.source === room1 && edge.target === room2)) {
               this.edges.push({
                 id: `edge_${room1}_${room2}`,
@@ -353,14 +324,12 @@ export class GameEngine {
         return false;
       }
       
-      // Check if character is in current location
       const charactersHere = this.getCharactersInLocation();
       if (!charactersHere.some(char => char.id === targetId)) {
         this.addToLog("That character isn't here.");
         return false;
       }
       
-      // Get weapon attack bonus
       const attackBonus = attributes.find(attr => attr.attribute === 'attack_bonus');
       const damage = attackBonus && typeof attackBonus.value === 'number' ? attackBonus.value : 1;
       
@@ -372,7 +341,6 @@ export class GameEngine {
     return false;
   }
 
-  // Examine something
   public examine(id: string): string {
     const node = this.getNodeById(id);
     if (!node) {
@@ -380,7 +348,6 @@ export class GameEngine {
       return "Not found";
     }
     
-    // Check if item is in inventory or current location
     if (node.type === 'item') {
       const inInventory = this.state.inventory.includes(id);
       const inLocation = this.getItemsInLocation().some(item => item.id === id);
@@ -391,7 +358,6 @@ export class GameEngine {
       }
     }
     
-    // Check if character or object is in current location
     if (node.type === 'character' && !this.getCharactersInLocation().some(char => char.id === id)) {
       this.addToLog("You don't see them here.");
       return "Not found";
@@ -404,7 +370,6 @@ export class GameEngine {
     
     let description = `${node.name}: ${node.description}`;
     
-    // Add special attributes for items
     if (node.type === 'item') {
       const attributes = this.itemAttributes.filter(attr => attr.item_id === id);
       if (attributes.length > 0) {
@@ -419,7 +384,6 @@ export class GameEngine {
     return description;
   }
 
-  // Talk to a character
   public talkTo(characterId: string): boolean {
     const character = this.getNodeById(characterId);
     if (!character || character.type !== 'character') {
@@ -427,14 +391,12 @@ export class GameEngine {
       return false;
     }
     
-    // Check if character is in current location
     const charactersHere = this.getCharactersInLocation();
     if (!charactersHere.some(char => char.id === characterId)) {
       this.addToLog("That character isn't here.");
       return false;
     }
     
-    // Find starting dialog for this character
     const startingDialog = this.dialogs.find(dialog => 
       dialog.npc_id === characterId && dialog.parent_id === null
     );
@@ -444,11 +406,9 @@ export class GameEngine {
       return false;
     }
     
-    // Set current dialog
     this.state.currentDialog = startingDialog;
     this.addToLog(`${character.name}: "${startingDialog.text}"`);
     
-    // Show response options
     if (startingDialog.responses && startingDialog.responses.length > 0) {
       this.addToLog("You can respond with:");
       startingDialog.responses.forEach((response, index) => {
@@ -459,7 +419,6 @@ export class GameEngine {
     return true;
   }
 
-  // Respond to dialog
   public respondToDialog(responseIndex: number): boolean {
     if (!this.state.currentDialog || !this.state.currentDialog.responses) {
       this.addToLog("You're not in a conversation.");
@@ -474,7 +433,6 @@ export class GameEngine {
     const selectedResponse = this.state.currentDialog.responses[responseIndex];
     this.addToLog(`You: "${selectedResponse.text}"`);
     
-    // Find next dialog node
     const nextDialog = this.dialogs.find(dialog => dialog.id === selectedResponse.next_id);
     if (!nextDialog) {
       this.addToLog("The conversation ends.");
@@ -482,7 +440,6 @@ export class GameEngine {
       return true;
     }
     
-    // Get character name
     const character = this.getNodeById(nextDialog.npc_id);
     if (character) {
       this.addToLog(`${character.name}: "${nextDialog.text}"`);
@@ -490,17 +447,14 @@ export class GameEngine {
       this.addToLog(`"${nextDialog.text}"`);
     }
     
-    // Update current dialog
     this.state.currentDialog = nextDialog;
     
-    // Show response options
     if (nextDialog.responses && nextDialog.responses.length > 0) {
       this.addToLog("You can respond with:");
       nextDialog.responses.forEach((response, index) => {
         this.addToLog(`${index + 1}. ${response.text}`);
       });
     } else {
-      // End conversation if no responses
       this.state.currentDialog = null;
       this.addToLog("The conversation ends.");
     }
@@ -508,7 +462,6 @@ export class GameEngine {
     return true;
   }
 
-  // Get inventory
   public getInventory(): string {
     if (this.state.inventory.length === 0) {
       this.addToLog("Your inventory is empty.");
@@ -527,7 +480,6 @@ export class GameEngine {
     return result;
   }
 
-  // Get active quests
   public getQuests(): string {
     const activeQuests = Object.values(this.state.currentQuests);
     
@@ -546,22 +498,18 @@ export class GameEngine {
     return result;
   }
 
-  // Start a quest
   public startQuest(questId: string): boolean {
-    // Check if quest exists
     const quest = this.quests.find(q => q.id === questId);
     if (!quest) {
       this.addToLog("That quest doesn't exist.");
       return false;
     }
     
-    // Check if already active
     if (this.state.currentQuests[questId]) {
       this.addToLog(`You've already started the quest "${quest.title}".`);
       return false;
     }
     
-    // Add to active quests
     this.state.currentQuests[questId] = {
       ...quest,
       status: 'in_progress'
@@ -572,15 +520,12 @@ export class GameEngine {
     return true;
   }
 
-  // Complete a quest
   public completeQuest(questId: string): boolean {
-    // Check if quest is active
     if (!this.state.currentQuests[questId]) {
       this.addToLog("You haven't started that quest.");
       return false;
     }
     
-    // Update quest status
     this.state.currentQuests[questId].status = 'completed';
     this.addToLog(`Quest completed: ${this.state.currentQuests[questId].title}`);
     this.addToLog(`Rewards: ${this.state.currentQuests[questId].rewards}`);
