@@ -10,6 +10,8 @@
   "dependencies": {
     "@xenova/transformers": "^2.6.1",
     "typescript": "^5.0.4",
-    "vite": "^4.3.9"
+    "vite": "^4.3.9",
+    "compromise": "^14.10.0",
+    "sentiment": "^5.0.2"
   }
 }
