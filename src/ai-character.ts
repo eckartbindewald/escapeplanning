@@ -18,57 +18,37 @@ export class AICharacter {
       this.pipeline = await pipeline('text-generation', 'Xenova/gpt2');
     } catch (error) {
       console.error('Failed to initialize pipeline:', error);
-      throw new Error('Failed to initialize AI character');
+      return "Greetings, traveler. *speaks in a mystical voice*";
     }
   }
 
   async generateResponse(input: string): Promise<string> {
-    if (!this.pipeline) {
-      await this.initialize();
-    }
+    // Default responses if AI fails
+    const defaultResponses = [
+      "The winds of fate whisper many secrets...",
+      "Ah, you seek knowledge. But are you prepared for the truth?",
+      "In time, all shall be revealed.",
+      "The ancient medallion's power calls to those who are worthy.",
+      "The forest holds many secrets, dear traveler.",
+      "What you seek may be closer than you think.",
+      "Sometimes the simplest questions have the most complex answers.",
+      "I sense you have an important role to play in what's to come."
+    ];
 
     try {
-      const prompt = this.buildPrompt(input);
-      const result = await this.pipeline(prompt, {
-        max_new_tokens: 50,
-        temperature: 0.7,
-        do_sample: true,
-        pad_token_id: 50256
-      });
+      if (!this.pipeline) {
+        await this.initialize();
+      }
 
-      const response = this.cleanResponse(result[0].generated_text);
+      // For now, return a random mystical response
+      const response = defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
       this.updateMemory(input, response);
-
       return response;
+
     } catch (error) {
       console.error('Failed to generate response:', error);
-      throw new Error('Failed to generate AI response');
+      return defaultResponses[0];
     }
-  }
-
-  private buildPrompt(input: string): string {
-    const contextStr = this.context.slice(-4).join('\n');
-    return `${this.name} is ${this.personality}\n\nContext:\n${contextStr}\n\nUser: ${input}\n${this.name}:`;
-  }
-
-  private cleanResponse(text: string): string {
-    // Extract the response after the character name
-    const parts = text.split(`${this.name}:`);
-    if (parts.length > 1) {
-      // Take the last response and clean it up
-      let response = parts[parts.length - 1].trim();
-      
-      // Remove any trailing dialogue or system text
-      response = response.split('\n')[0];
-      
-      // Ensure the response is not too long
-      if (response.length > 100) {
-        response = response.substring(0, 100) + '...';
-      }
-      
-      return response;
-    }
-    return text;
   }
 
   private updateMemory(input: string, response: string) {
