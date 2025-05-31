@@ -31,23 +31,21 @@ export class BrowserRunner {
     this.renderLog();
   }
 
-  private handleInput(): void {
+  private async handleInput(): Promise<void> {
     const input = this.inputEl.value.trim();
     if (!input) return;
     this.inputEl.value = '';
-    this.parser.parseCommand(input);
+    await this.parser.parseCommand(input);
     this.renderLocation();
     this.renderLog();
   }
 
   private print(msg: string): void {
     this.outputEl.innerHTML += `<div>${msg}</div>`;
+    this.outputEl.scrollTop = this.outputEl.scrollHeight;
   }
 
-  private handleLookAround(): void {
-    // TEST: Always print a visible test message
-    this.outputEl.innerHTML += `<pre style='color: red; font-size: 2em;'>TEST MESSAGE</pre>`;
-    // Print location, characters, and items
+  private async handleLookAround(): Promise<void> {
     const desc = this.engine.lookAround();
     this.outputEl.innerHTML += `<pre>${desc}</pre>`;
     this.outputEl.scrollTop = this.outputEl.scrollHeight;
@@ -56,8 +54,6 @@ export class BrowserRunner {
   private renderLocation(): void {
     const state = this.engine.getState();
     const location = this.engine.getNodeById(state.currentLocation);
-    // Debug logging
-    console.log('Current location ID:', state.currentLocation, 'Location object:', location);
     if (!location) {
       this.outputEl.innerHTML = `<div><strong>ERROR:</strong> No valid location for "${state.currentLocation}"</div>`;
       return;
@@ -74,13 +70,18 @@ export class BrowserRunner {
     if (items.length > 0) {
       desc += '<div><strong>Items here:</strong> ' + items.map(i => i.name).join(', ') + '</div>';
     }
+    // Characters
+    const characters = this.engine.getCharactersInLocation();
+    if (characters.length > 0) {
+      desc += '<div><strong>Characters here:</strong> ' + characters.map(c => c.name).join(', ') + '</div>';
+    }
     this.outputEl.innerHTML = desc + '<hr>' + this.outputEl.innerHTML;
   }
 
   private renderLog(): void {
-    // Show the last 20 messages from the game log
     const log = this.engine.getState().gameLog.slice(-20);
-    this.outputEl.innerHTML = log.map(line => `<div>${line}</div>`).join('');
+    const logHtml = log.map(line => `<div>${line}</div>`).join('');
+    this.outputEl.innerHTML = logHtml;
     this.outputEl.scrollTop = this.outputEl.scrollHeight;
   }
 }
