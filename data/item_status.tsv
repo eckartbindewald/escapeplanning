@@ -1,0 +1,4 @@
+item_id	player_id	attribute	value
+item_1	player_1	location	char_1
+item_2	player_1	location	loc_3
+item_3	player_1	location	loc_2

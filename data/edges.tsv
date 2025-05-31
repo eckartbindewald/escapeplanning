@@ -1,0 +1,5 @@
+id	source	target	type	description
+edge_1	loc_1	loc_3	path	A cobblestone path leads from the Town Square to the Old Tavern.
+edge_2	loc_1	loc_2	path	A narrow trail connects the Town Square to the Forest Edge.
+edge_3	loc_3	door_1	connects	The tavern side of the cellar door.
+edge_4	loc_5	door_1	connects	The cellar side of the cellar door.

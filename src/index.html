@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text-Based RPG</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #1a1a1a;
+      color: #ddd;
+    }
+    #game-container {
+      border: 2px solid #444;
+      padding: 20px;
+      margin-bottom: 20px;
+      background-color: #222;
+    }
+    #game-output {
+      height: 400px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+      padding: 10px;
+      background-color: #111;
+      border: 1px solid #444;
+    }
+    #player-input {
+      width: 100%;
+      padding: 10px;
+      background-color: #333;
+      color: #fff;
+      border: 1px solid #555;
+    }
+    #player-stats {
+      margin-bottom: 20px;
+      padding: 10px;
+      background-color: #333;
+      border: 1px solid #444;
+    }
+    .action-button {
+      margin: 5px;
+      padding: 8px 16px;
+      background-color: #444;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    .action-button:hover {
+      background-color: #666;
+    }
+    .player-action {
+      color: #77aaff;
+    }
+    .npc-dialog {
+      color: #ffcc66;
+    }
+    .system-message {
+      color: #aaaaaa;
+      font-style: italic;
+    }
+    .error-message {
+      color: #ff6666;
+    }
+    .success-message {
+      color: #66ff66;
+    }
+  </style>
+</head>
+<body>
+  <h1>Escape Planning: Text-Based RPG</h1>
+  
+  <div id="game-container">
+    <div id="player-stats">
+      <!-- Player stats will be displayed here -->
+    </div>
+    <div id="game-output">
+      <!-- Game text will appear here -->
+    </div>
+    <div id="action-buttons">
+      <!-- Action buttons will be added here -->
+    </div>
+    <input type="text" id="player-input" placeholder="Type your command here..." />
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

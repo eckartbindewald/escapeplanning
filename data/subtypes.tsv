@@ -1,0 +1,22 @@
+type	subtype	description
+location	indoor	Interior location (e.g., tavern, house, dungeon room)
+location	outdoor	Exterior location (e.g., forest, town square, field)
+location	region	Larger world region or area
+character	npc	Non-player character
+character	pc	Player character
+character	animal	Animal or creature
+character	merchant	Merchant or shopkeeper
+item	weapon	Weapon (e.g., sword, bow)
+item	armor	Armor (e.g., shield, helmet)
+item	food	Food item (e.g., bread, apple)
+item	drink	Drink item (e.g., potion, water)
+item	money	Currency (e.g., gold, coins)
+item	key	Key or unlocking device
+item	artifact	Special or magical item
+item	potion	Potion or consumable
+item	misc	Miscellaneous item
+object	door	Door or gate
+object	lever	Lever or switch
+object	chest	Chest or container
+object	altar	Altar or ritual object
+object	trap	Trap or hazard

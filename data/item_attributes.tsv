@@ -1,0 +1,4 @@
+item_id	attribute	value
+item_2	attack_bonus	5
+item_1	heal_amount	20
+item_3	unlock	true

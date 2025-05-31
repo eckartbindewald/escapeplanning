@@ -1,0 +1,4 @@
+id	title	description	giver	requirements	victory_condition	rewards	status
+quest_1	Find the Lost Cat	Shadowpaw the cat has gone missing. Elara asks you to find and return her pet.	char_1	Go to Forest Edge; Find Shadowpaw	Shadowpaw is present in Town Square	Healing Potion; 50 XP	not_started
+quest_2	Retrieve the Rusty Sword	Grim wants you to find the Rusty Sword lost in the tavern and bring it to him.	char_2	Find Rusty Sword in Old Tavern; Bring to Grim	Player gives Rusty Sword to Grim	5 Gold; 30 XP	not_started
+quest_3	Unlock the Forest Gate	A mysterious key is said to unlock a hidden gate at the Forest Edge.	char_3	Find Mysterious Key; Use at Forest Edge	Player uses Mysterious Key at Forest Edge	Access to new area; 100 XP	not_started

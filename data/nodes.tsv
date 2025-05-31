@@ -1,0 +1,11 @@
+id	type	subtype	name	description
+loc_1	location	outdoor	Town Square	The bustling center of the village, filled with merchants and townsfolk.
+loc_2	location	outdoor	Forest Edge	The edge of a dark, mysterious forest.
+loc_3	location	indoor	Old Tavern	A cozy tavern where adventurers gather.
+char_1	character	npc	Elara	The village healer, known for her kindness.
+char_2	character	npc	Grim	The grumpy tavern keeper.
+char_3	character	animal	Shadowpaw	A stealthy cat lurking near the forest.
+item_1	item	potion	Healing Potion	A small vial that restores health.
+item_2	item	weapon	Rusty Sword	An old, worn sword found in the tavern.
+item_3	item	key	Mysterious Key	A key with unknown origins, found at the forest edge.
+door_1	object	door	Cellar Door	A heavy wooden door between the tavern and the cellar.

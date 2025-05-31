@@ -1,0 +1,3 @@
+object_id	player_id	attribute	value
+door_1	player_1	is_open	false
+door_1	player_1	is_locked	true

@@ -1,0 +1,5 @@
+id	npc_id	parent_id	text	response_1	response_1_next	response_2	response_2_next	response_3	response_3_next
+1	char_1	NULL	Hello, stranger! What brings you to our village?	Just passing through.	2	Looking for work.	3	None of your business.	4
+2	char_1	1	Enjoy your stay!						
+3	char_1	1	You should talk to Grim at the tavern.						
+4	char_1	1	No need to be rude.						
