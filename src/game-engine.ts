@@ -22,6 +22,7 @@ export class GameEngine {
   private dialogs: DialogNode[] = [];
   private quests: Quest[] = [];
   private state: GameState;
+  private gameEnded: boolean = false;
   
   constructor() {
     this.state = {
@@ -69,6 +70,7 @@ export class GameEngine {
   }
 
   public addToLog(message: string): void {
+    if (this.gameEnded) return; // Don't add more messages after game end
     this.state.gameLog.push(message);
     console.log(message);
   }
@@ -78,6 +80,7 @@ export class GameEngine {
   }
 
   public getConnectedLocations(): Node[] {
+    if (this.gameEnded) return []; // No movement after game end
     const locationEdges = this.edges.filter(edge => 
       edge.source === this.state.currentLocation && 
       this.getNodeById(edge.target)?.type === 'location'
@@ -88,6 +91,11 @@ export class GameEngine {
   }
 
   public moveToLocation(locationId: string): boolean {
+    if (this.gameEnded) {
+      this.addToLog("The game has ended. Thanks for playing!");
+      return false;
+    }
+    
     const connectedLocations = this.getConnectedLocations();
     const targetLocation = connectedLocations.find(loc => loc.id === locationId);
     
@@ -140,6 +148,11 @@ export class GameEngine {
   }
 
   public lookAround(): string {
+    if (this.gameEnded) {
+      this.addToLog("The game has ended. Thanks for playing!");
+      return "Game Over";
+    }
+    
     const location = this.getNodeById(this.state.currentLocation);
     if (!location) return "You're lost in an unknown place.";
     
@@ -184,6 +197,11 @@ export class GameEngine {
   }
 
   public takeItem(itemId: string): boolean {
+    if (this.gameEnded) {
+      this.addToLog("The game has ended. Thanks for playing!");
+      return false;
+    }
+    
     const itemsHere = this.getItemsInLocation();
     const item = itemsHere.find(i => i.id === itemId);
     
@@ -216,6 +234,11 @@ export class GameEngine {
   }
 
   public dropItem(itemId: string): boolean {
+    if (this.gameEnded) {
+      this.addToLog("The game has ended. Thanks for playing!");
+      return false;
+    }
+    
     if (!this.state.inventory.includes(itemId)) {
       this.addToLog("You don't have that item.");
       return false;
@@ -249,6 +272,11 @@ export class GameEngine {
   }
 
   public useItem(itemId: string, targetId?: string): boolean {
+    if (this.gameEnded) {
+      this.addToLog("The game has ended. Thanks for playing!");
+      return false;
+    }
+    
     if (!this.state.inventory.includes(itemId)) {
       this.addToLog("You don't have that item.");
       return false;
@@ -327,14 +355,9 @@ export class GameEngine {
         // Remove medallion from inventory
         this.state.inventory = this.state.inventory.filter(id => id !== itemId);
         
-        // Complete the quest
+        // Complete the quest and end the game
         this.completeQuest('quest_4');
-        
-        // Show victory message
-        this.addToLog('\n=== Congratulations! ===');
-        this.addToLog('You have completed the Ancient Medallion quest!');
-        this.addToLog('You receive: 100 Gold and 200 XP');
-        this.addToLog('Thank you for playing!\n');
+        this.endGame();
         
         return true;
       }
@@ -368,6 +391,11 @@ export class GameEngine {
   }
 
   public examine(id: string): string {
+    if (this.gameEnded) {
+      this.addToLog("The game has ended. Thanks for playing!");
+      return "Game Over";
+    }
+    
     const node = this.getNodeById(id);
     if (!node) {
       this.addToLog("You don't see that here.");
@@ -411,6 +439,11 @@ export class GameEngine {
   }
 
   public talkTo(characterId: string): boolean {
+    if (this.gameEnded) {
+      this.addToLog("The game has ended. Thanks for playing!");
+      return false;
+    }
+    
     const character = this.getNodeById(characterId);
     if (!character || character.type !== 'character') {
       this.addToLog("You don't see them here.");
@@ -446,6 +479,11 @@ export class GameEngine {
   }
 
   public respondToDialog(responseIndex: number): boolean {
+    if (this.gameEnded) {
+      this.addToLog("The game has ended. Thanks for playing!");
+      return false;
+    }
+    
     if (!this.state.currentDialog || !this.state.currentDialog.responses) {
       this.addToLog("You're not in a conversation.");
       return false;
@@ -473,21 +511,14 @@ export class GameEngine {
       return true;
     }
     
-    // Handle medallion quest completion
+    // Handle medallion quest completion through dialog
     if (nextDialog.id === 'dialog_12' && this.state.inventory.includes('item_4')) {
       // Remove medallion from inventory
       this.state.inventory = this.state.inventory.filter(id => id !== 'item_4');
       
-      // Complete the quest
+      // Complete the quest and end the game
       this.completeQuest('quest_4');
-      
-      // Show victory message after dialog
-      setTimeout(() => {
-        this.addToLog('\n=== Congratulations! ===');
-        this.addToLog('You have completed the Ancient Medallion quest!');
-        this.addToLog('You receive: 100 Gold and 200 XP');
-        this.addToLog('Thank you for playing!\n');
-      }, 1000);
+      this.endGame();
     }
     
     // Get character name
@@ -517,6 +548,11 @@ export class GameEngine {
   }
 
   public getInventory(): string {
+    if (this.gameEnded) {
+      this.addToLog("The game has ended. Thanks for playing!");
+      return "Game Over";
+    }
+    
     if (this.state.inventory.length === 0) {
       this.addToLog("Your inventory is empty.");
       return "Inventory: Empty";
@@ -535,6 +571,11 @@ export class GameEngine {
   }
 
   public getQuests(): string {
+    if (this.gameEnded) {
+      this.addToLog("The game has ended. Thanks for playing!");
+      return "Game Over";
+    }
+    
     const activeQuests = Object.values(this.state.currentQuests);
     
     if (activeQuests.length === 0) {
@@ -553,6 +594,11 @@ export class GameEngine {
   }
 
   public startQuest(questId: string): boolean {
+    if (this.gameEnded) {
+      this.addToLog("The game has ended. Thanks for playing!");
+      return false;
+    }
+    
     const quest = this.quests.find(q => q.id === questId);
     if (!quest) {
       this.addToLog("That quest doesn't exist.");
@@ -585,5 +631,14 @@ export class GameEngine {
     this.addToLog(`Rewards: ${this.state.currentQuests[questId].rewards}`);
     
     return true;
+  }
+
+  private endGame(): void {
+    this.gameEnded = true;
+    this.addToLog('\n=== Congratulations! ===');
+    this.addToLog('You have completed the Ancient Medallion quest!');
+    this.addToLog('You receive: 100 Gold and 200 XP');
+    this.addToLog('\nThanks for playing! The game is now complete.\n');
+    this.addToLog('Type "quit" to exit or refresh the page to play again.');
   }
 }
