@@ -12,7 +12,13 @@ export class AICharacter {
     '*eyes sparkling with ancient wisdom*',
     '*gestures to the dancing shadows*',
     '*voice carries a hint of laughter*',
-    '*watches a leaf spiral down*'
+    '*watches a leaf spiral down*',
+    '*tilts head with genuine interest*',
+    '*leans forward attentively*',
+    '*brushes a strand of silver hair*',
+    '*traces patterns in the air*',
+    '*adjusts her flowing robes*',
+    '*glances at the shifting shadows*'
   ];
 
   constructor(
@@ -32,17 +38,34 @@ export class AICharacter {
     // Handle different types of inputs
     if (input.toLowerCase().includes('stupid') || input.toLowerCase().includes('pointless')) {
       return this.getRandomResponse([
-        "*tilts head curiously* Your frustration speaks of deeper questions. What answers do you truly seek?",
-        "*gently* Sometimes the simplest questions hide the most complex truths. What troubles you?",
-        "*thoughtfully* Every word carries weight, even those of doubt. What would make this conversation more meaningful for you?"
+        "*settling comfortably* I sense your frustration. Sometimes the most meaningful conversations start from moments of doubt. What would make this more interesting for you?",
+        "*gently* Your honesty is refreshing. Let's find a more engaging direction for our chat. What topics truly interest you?",
+        "*leaning forward with genuine interest* I value your directness. Perhaps we could explore something that matters more to you? What would you like to discuss?"
       ]);
     }
 
     if (input.length < 5) {
       return this.getRandomResponse([
-        "*settling on a nearby stone* Sometimes few words carry great meaning. What thoughts lie behind them?",
-        "*watching the leaves dance* Brief words often hold deep waters. Care to explore them further?",
-        "*smiling gently* Your brevity intrigues me. What more would you share if time were endless?"
+        "*settling nearby* Sometimes few words hold deep meaning. What thoughts are you pondering?",
+        "*smiling warmly* Brief words can spark the most interesting conversations. What's on your mind?",
+        "*watching the leaves dance* Your brevity intrigues me. Care to share more of your thoughts?"
+      ]);
+    }
+
+    // Generate contextual responses based on input topics
+    if (input.toLowerCase().includes('forest') || input.toLowerCase().includes('nature')) {
+      return this.getRandomResponse([
+        "*gesturing to the surrounding trees* The forest has been my home and teacher. What draws you to these ancient woods?",
+        "*watching a bird soar overhead* Nature speaks in many voices - through rustling leaves, through morning mist, through evening shadows. Which of its voices calls to you?",
+        "*touching a nearby tree trunk* These woods hold countless stories. What story would you like to hear?"
+      ]);
+    }
+
+    if (input.toLowerCase().includes('magic') || input.toLowerCase().includes('power')) {
+      return this.getRandomResponse([
+        "*eyes twinkling* Magic flows through everything here, though not always in the ways we expect. What kind of magic do you seek?",
+        "*tracing glowing patterns in the air* Power comes in many forms - wisdom, kindness, understanding. Which interests you most?",
+        "*gesturing to the dancing shadows* The greatest magic often lies in the simplest things - a smile, a kind word, a moment of understanding. What magic have you discovered in your journey?"
       ]);
     }
 
@@ -68,33 +91,33 @@ export class AICharacter {
 
   private generateContextualResponse(input: string): string {
     const responses = [
-      "Your words remind me of ancient whispers in these woods. What echoes do you hear?",
-      "There's wisdom in your perspective. How did you come to see things this way?",
-      "The forest seems to respond to your presence. What draws you to these shadows?",
-      "Your journey here must have many stories. Which would you share?",
-      "Sometimes the path chooses us as much as we choose it. What brought you to this moment?"
+      "I sense there's more to your words. What thoughts lie behind them?",
+      "Your perspective intrigues me. How did you come to see things this way?",
+      "Something in your voice suggests a deeper story. Would you share it?",
+      "That's an interesting way to look at it. What led you to this understanding?",
+      "Your words carry echoes of experience. What journey brought you here?"
     ];
     return responses[Math.floor(Math.random() * responses.length)];
   }
 
   private generatePersonalResponse(input: string): string {
     const responses = [
-      "Each visitor brings their own light to these woods. What light do you carry?",
-      "Your questions stir ancient memories. What answers do you seek?",
-      "The trees whisper differently in your presence. What secrets do they share with you?",
-      "Your path through these woods is unique. What guides your steps?",
-      "There's more to your words than meets the ear. What lies beneath them?"
+      "I've met many travelers, but each brings their own unique story. What's yours?",
+      "Your approach reminds me of ancient wisdom, yet feels fresh. How do you see it?",
+      "There's something unique about your perspective. Would you tell me more?",
+      "I find your thoughts fascinating. What else have you discovered in your travels?",
+      "Your words paint an interesting picture. How else do you see the world?"
     ];
     return responses[Math.floor(Math.random() * responses.length)];
   }
 
   private generateNaturalResponse(input: string): string {
     const responses = [
-      "The wind carries many stories. Which one speaks to you?",
-      "Every leaf falls with purpose. What purpose brings you here?",
-      "The forest holds many secrets. Which ones call to you?",
-      "Time flows differently among these trees. How does it feel to you?",
-      "Nature speaks in riddles sometimes. What riddles do you ponder?"
+      "The forest seems to respond to your presence. What do you feel here?",
+      "Nature often reflects our inner thoughts. What does it show you?",
+      "These woods hold many stories. Which ones speak to you?",
+      "Every path here leads to discovery. What would you like to explore?",
+      "The answers we seek often find us in unexpected ways. What answers do you seek?"
     ];
     return responses[Math.floor(Math.random() * responses.length)];
   }
