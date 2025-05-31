@@ -50,6 +50,18 @@ export class GameEngine {
     this.state.currentLocation = startLocation;
     this.addToLog(`You find yourself in ${this.getNodeById(startLocation)?.name || 'an unknown location'}.`);
     
+    // Generate Luna's welcome message
+    const luna = aiCharacters['char_4'];
+    if (luna) {
+      try {
+        const welcomeMessage = await luna.generateResponse("Welcome the player to the game with a mysterious and intriguing message");
+        this.addToLog(`\nLuna appears before you in a shimmer of light and speaks:`);
+        this.addToLog(`"${welcomeMessage}"`);
+      } catch (error) {
+        console.error('Failed to generate welcome message:', error);
+      }
+    }
+    
     // Start the medallion quest automatically
     this.startQuest('quest_4');
   }
