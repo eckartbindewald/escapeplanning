@@ -15,6 +15,7 @@ export const aiCharacters: Record<string, AICharacter> = {
       'In sharing our stories, we find common ground',
       'The present moment holds infinite possibilities',
       'Every journey begins with a single step into the unknown'
-    ]
+    ],
+    'Xenova/distilgpt2'
   )
 };
