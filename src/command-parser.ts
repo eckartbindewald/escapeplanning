@@ -1,6 +1,6 @@
 import { GameEngine } from './game-engine';
 
-type CommandHandler = (args: string[]) => void;
+type CommandHandler = (args: string[]) => Promise<void>;
 
 export class CommandParser {
   private engine: GameEngine;
@@ -16,7 +16,7 @@ export class CommandParser {
 
   private registerCommands(): void {
     // Movement commands
-    this.registerCommand('go', (args) => {
+    this.registerCommand('go', async (args) => {
       if (args.length === 0) {
         this.engine.addToLog("Go where? Try 'go north' or specify a location.");
         return;
@@ -50,7 +50,7 @@ export class CommandParser {
     this.registerAlias('w', 'go west');
 
     // Look command
-    this.registerCommand('look', (args) => {
+    this.registerCommand('look', async (args) => {
       if (args.length === 0) {
         this.engine.lookAround();
         return;
@@ -114,7 +114,7 @@ export class CommandParser {
     this.registerAlias('x', 'look');
 
     // Take command
-    this.registerCommand('take', (args) => {
+    this.registerCommand('take', async (args) => {
       if (args.length === 0) {
         this.engine.addToLog("Take what?");
         return;
@@ -136,7 +136,7 @@ export class CommandParser {
     this.registerAlias('pickup', 'take');
 
     // Drop command
-    this.registerCommand('drop', (args) => {
+    this.registerCommand('drop', async (args) => {
       if (args.length === 0) {
         this.engine.addToLog("Drop what?");
         return;
@@ -159,7 +159,7 @@ export class CommandParser {
     });
 
     // Use command
-    this.registerCommand('use', (args) => {
+    this.registerCommand('use', async (args) => {
       if (args.length === 0) {
         this.engine.addToLog("Use what?");
         return;
@@ -235,7 +235,7 @@ export class CommandParser {
     });
 
     // Talk command
-    this.registerCommand('talk', (args) => {
+    this.registerCommand('talk', async (args) => {
       if (args.length === 0) {
         this.engine.addToLog("Talk to whom?");
         return;
@@ -248,7 +248,7 @@ export class CommandParser {
       );
       
       if (character) {
-        this.engine.talkTo(character.id);
+        await this.engine.talkTo(character.id);
       } else {
         this.engine.addToLog(`You don't see ${characterName} here.`);
       }
@@ -256,7 +256,7 @@ export class CommandParser {
     this.registerAlias('speak', 'talk');
 
     // Dialog response
-    this.registerCommand('say', (args) => {
+    this.registerCommand('say', async (args) => {
       if (args.length === 0) {
         this.engine.addToLog("Say what?");
         return;
@@ -274,7 +274,7 @@ export class CommandParser {
       if (/^\d+$/.test(input)) {
         const responseIndex = parseInt(input) - 1;
         if (responseIndex >= 0 && responseIndex < dialog.responses.length) {
-          this.engine.respondToDialog(responseIndex);
+          await this.engine.respondToDialog(responseIndex);
           return;
         }
       }
@@ -285,7 +285,7 @@ export class CommandParser {
       );
       
       if (responseIndex >= 0) {
-        this.engine.respondToDialog(responseIndex);
+        await this.engine.respondToDialog(responseIndex);
       } else {
         this.engine.addToLog("That's not a valid response. Try using the number of the response you want to give.");
       }
@@ -294,20 +294,20 @@ export class CommandParser {
     this.registerAlias('answer', 'say');
 
     // Inventory command
-    this.registerCommand('inventory', (args) => {
+    this.registerCommand('inventory', async (args) => {
       this.engine.getInventory();
     });
     this.registerAlias('i', 'inventory');
     this.registerAlias('inv', 'inventory');
 
     // Quests command
-    this.registerCommand('quests', (args) => {
+    this.registerCommand('quests', async (args) => {
       this.engine.getQuests();
     });
     this.registerAlias('q', 'quests');
 
     // Help command
-    this.registerCommand('help', (args) => {
+    this.registerCommand('help', async (args) => {
       const helpText = `
 Available commands:
 - go/move/walk [direction/location]: Move to a new location
@@ -325,19 +325,19 @@ Available commands:
     });
 
     // Save command
-    this.registerCommand('save', (args) => {
+    this.registerCommand('save', async (args) => {
       const savedState = this.engine.saveGame();
       console.log('Game saved:', savedState);
       this.engine.addToLog("Game saved.");
     });
 
     // Load command
-    this.registerCommand('load', (args) => {
+    this.registerCommand('load', async (args) => {
       this.engine.addToLog("Load game not implemented in this demo.");
     });
 
     // Quit command
-    this.registerCommand('quit', (args) => {
+    this.registerCommand('quit', async (args) => {
       this.engine.addToLog("Thanks for playing!");
     });
     this.registerAlias('exit', 'quit');
@@ -351,7 +351,7 @@ Available commands:
     this.aliases.set(alias.toLowerCase(), command.toLowerCase());
   }
 
-  public parseCommand(input: string): void {
+  public async parseCommand(input: string): Promise<void> {
     if (!input || input.trim() === '') {
       this.engine.addToLog("Type a command, or 'help' for a list of commands.");
       return;
@@ -364,7 +364,7 @@ Available commands:
     // Check for direct command
     if (this.commands.has(command)) {
       const handler = this.commands.get(command)!;
-      handler(args);
+      await handler(args);
       return;
     }
 
@@ -376,7 +376,7 @@ Available commands:
       
       if (this.commands.has(actualCommand)) {
         const handler = this.commands.get(actualCommand)!;
-        handler(aliasArgs);
+        await handler(aliasArgs);
         return;
       }
     }
@@ -388,21 +388,21 @@ Available commands:
     if (fullCommand.match(/^(pick|take|get)\s+up\s+/i)) {
       const item = fullCommand.replace(/^(pick|take|get)\s+up\s+/i, '').replace(/^the\s+/i, '');
       const handler = this.commands.get('take')!;
-      handler([item]);
+      await handler([item]);
       return;
     }
     
     if (fullCommand.match(/^(look|examine|inspect)\s+at\s+/i)) {
       const target = fullCommand.replace(/^(look|examine|inspect)\s+at\s+/i, '').replace(/^the\s+/i, '');
       const handler = this.commands.get('look')!;
-      handler([target]);
+      await handler([target]);
       return;
     }
     
     if (fullCommand.match(/^talk\s+to\s+/i)) {
       const character = fullCommand.replace(/^talk\s+to\s+/i, '').replace(/^the\s+/i, '');
       const handler = this.commands.get('talk')!;
-      handler([character]);
+      await handler([character]);
       return;
     }
 
@@ -410,7 +410,7 @@ Available commands:
     const currentDialog = this.engine.getState().currentDialog;
     if (currentDialog) {
       const handler = this.commands.get('say')!;
-      handler(tokens);
+      await handler(tokens);
       return;
     }
 
