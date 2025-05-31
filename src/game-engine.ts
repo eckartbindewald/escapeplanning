@@ -71,7 +71,7 @@ export class GameEngine {
   }
 
   public addToLog(message: string): void {
-    if (this.gameEnded) return; // Don't add more messages after game end
+    if (this.gameEnded) return;
     this.state.gameLog.push(message);
     console.log(message);
   }
@@ -81,7 +81,7 @@ export class GameEngine {
   }
 
   public getConnectedLocations(): Node[] {
-    if (this.gameEnded) return []; // No movement after game end
+    if (this.gameEnded) return [];
     const locationEdges = this.edges.filter(edge => 
       edge.source === this.state.currentLocation && 
       this.getNodeById(edge.target)?.type === 'location'
@@ -343,10 +343,8 @@ export class GameEngine {
         this.addToLog(`${target.name} examines the medallion with great interest.`);
         this.addToLog('"Incredible! You actually found it! As promised, here\'s your reward."');
         
-        // Remove medallion from inventory
         this.state.inventory = this.state.inventory.filter(id => id !== itemId);
         
-        // Complete the quest and end the game
         this.completeQuest('quest_4');
         this.endGame();
         
@@ -447,7 +445,6 @@ export class GameEngine {
       return false;
     }
     
-    // Handle AI characters
     if (character.subtype === 'aic') {
       const aiCharacter = aiCharacters[characterId];
       if (!aiCharacter) {
@@ -473,7 +470,6 @@ export class GameEngine {
       }
     }
     
-    // Handle regular NPCs
     const startingDialog = this.dialogs.find(dialog => 
       dialog.npc_id === characterId && dialog.parent_id === null
     );
@@ -512,6 +508,14 @@ export class GameEngine {
       this.addToLog("The conversation ends.");
       this.state.currentDialog = null;
       return false;
+    }
+
+    // Check for exit commands
+    const exitCommands = ['exit', 'bye', 'goodbye', 'leave', 'end'];
+    if (exitCommands.includes(input.toLowerCase())) {
+      this.addToLog(`You end the conversation with ${character.name}.`);
+      this.state.currentDialog = null;
+      return true;
     }
 
     // Handle AI character dialog
@@ -611,7 +615,7 @@ export class GameEngine {
       return true;
     }
 
-    this.addToLog("That's not a valid response.");
+    this.addToLog("That's not a valid response. Type 'exit' to end the conversation.");
     return false;
   }
 
