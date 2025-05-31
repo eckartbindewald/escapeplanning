@@ -262,35 +262,36 @@ export class CommandParser {
         return;
       }
       
-      const responseText = args.join(' ').toLowerCase();
-      
-      // Check if we're in a dialog
       const dialog = this.engine.getState().currentDialog;
       if (!dialog) {
         this.engine.addToLog("You're not in a conversation.");
         return;
       }
+
+      const input = args.join(' ').toLowerCase();
       
-      // Try to find matching response by text or number
-      if (/^\d+$/.test(responseText)) {
-        // User specified a number
-        const responseIndex = parseInt(responseText) - 1;
+      // First try to match by number
+      if (/^\d+$/.test(input)) {
+        const responseIndex = parseInt(input) - 1;
+        if (responseIndex >= 0 && responseIndex < dialog.responses.length) {
+          this.engine.respondToDialog(responseIndex);
+          return;
+        }
+      }
+      
+      // Then try to match by text
+      const responseIndex = dialog.responses.findIndex(response => 
+        response.text.toLowerCase().includes(input)
+      );
+      
+      if (responseIndex >= 0) {
         this.engine.respondToDialog(responseIndex);
       } else {
-        // Try to match by text
-        const responses = dialog.responses || [];
-        const responseIndex = responses.findIndex(r => 
-          r.text.toLowerCase().includes(responseText)
-        );
-        
-        if (responseIndex >= 0) {
-          this.engine.respondToDialog(responseIndex);
-        } else {
-          this.engine.addToLog("That's not a valid response.");
-        }
+        this.engine.addToLog("That's not a valid response. Try using the number of the response you want to give.");
       }
     });
     this.registerAlias('respond', 'say');
+    this.registerAlias('answer', 'say');
 
     // Inventory command
     this.registerCommand('inventory', (args) => {
@@ -315,13 +316,10 @@ Available commands:
 - drop [item]: Drop an item from your inventory
 - use [item] (on/with [target]): Use an item, optionally on a target
 - talk/speak [character]: Start a conversation with a character
-- say/respond [response/number]: Respond in a conversation
+- say/respond [number/text]: Choose a dialog response by number or text
 - inventory/i/inv: Check your inventory
 - quests/q: View your active quests
 - help: Show this help text
-- save: Save the game
-- load: Load a saved game
-- quit/exit: End the game
       `;
       this.engine.addToLog(helpText);
     });
@@ -329,14 +327,12 @@ Available commands:
     // Save command
     this.registerCommand('save', (args) => {
       const savedState = this.engine.saveGame();
-      // In a real implementation, you would save this to a file or localStorage
       console.log('Game saved:', savedState);
       this.engine.addToLog("Game saved.");
     });
 
     // Load command
     this.registerCommand('load', (args) => {
-      // In a real implementation, you would load from a file or localStorage
       this.engine.addToLog("Load game not implemented in this demo.");
     });
 
@@ -407,6 +403,14 @@ Available commands:
       const character = fullCommand.replace(/^talk\s+to\s+/i, '').replace(/^the\s+/i, '');
       const handler = this.commands.get('talk')!;
       handler([character]);
+      return;
+    }
+
+    // If in a dialog, try to handle as a dialog response
+    const currentDialog = this.engine.getState().currentDialog;
+    if (currentDialog) {
+      const handler = this.commands.get('say')!;
+      handler(tokens);
       return;
     }
 
