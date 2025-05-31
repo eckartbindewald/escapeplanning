@@ -1,6 +1,7 @@
 // Types representing the game data structure
 
 export type NodeType = 'location' | 'character' | 'item' | 'object';
+export type CharacterSubtype = 'npc' | 'aic' | 'pc' | 'animal' | 'merchant';
 
 export interface Node {
   id: string;

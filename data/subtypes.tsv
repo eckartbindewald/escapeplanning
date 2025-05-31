@@ -2,7 +2,8 @@ type	subtype	description
 location	indoor	Interior location (e.g., tavern, house, dungeon room)
 location	outdoor	Exterior location (e.g., forest, town square, field)
 location	region	Larger world region or area
-character	npc	Non-player character
+character	npc	Non-player character with scripted behavior
+character	aic	AI-driven character with dynamic behavior
 character	pc	Player character
 character	animal	Animal or creature
 character	merchant	Merchant or shopkeeper
