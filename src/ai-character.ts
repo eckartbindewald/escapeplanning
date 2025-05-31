@@ -1,54 +1,70 @@
 import { pipeline } from '@xenova/transformers';
 
 export class AICharacter {
-  private pipeline: any = null;
   private context: string[] = [];
   private maxMemory: number = 10;
+  private lastResponse: string = '';
 
   constructor(
     private name: string,
     private personality: string,
-    private knowledge: string[] = []
+    private knowledge: string[] = [],
+    private responses: Record<string, string[]> = {}
   ) {
     this.context = [...knowledge];
   }
 
-  async initialize() {
-    try {
-      this.pipeline = await pipeline('text-generation', 'Xenova/gpt2');
-    } catch (error) {
-      console.error('Failed to initialize pipeline:', error);
-      return "Greetings, traveler. *speaks in a mystical voice*";
-    }
-  }
-
   async generateResponse(input: string): Promise<string> {
-    // Default responses if AI fails
-    const defaultResponses = [
-      "The winds of fate whisper many secrets...",
-      "Ah, you seek knowledge. But are you prepared for the truth?",
-      "In time, all shall be revealed.",
-      "The ancient medallion's power calls to those who are worthy.",
-      "The forest holds many secrets, dear traveler.",
-      "What you seek may be closer than you think.",
-      "Sometimes the simplest questions have the most complex answers.",
-      "I sense you have an important role to play in what's to come."
+    const inputLower = input.toLowerCase();
+    
+    // Check for greetings
+    if (inputLower.includes('hello') || inputLower.includes('hi ') || inputLower === 'hi') {
+      return `Greetings, traveler. I am ${this.name}, seeker of ancient truths.`;
+    }
+
+    // Check for how are you
+    if (inputLower.includes('how are you')) {
+      return "I exist in harmony with the cosmic forces that guide us all.";
+    }
+
+    // Check for questions about the medallion
+    if (inputLower.includes('medallion')) {
+      return "The Ancient Medallion... a powerful artifact that holds secrets beyond mortal understanding. Its true power lies not in its form, but in what it represents.";
+    }
+
+    // Check for questions about the forest
+    if (inputLower.includes('forest')) {
+      return "The forest is more than mere trees and shadows. It holds secrets that whisper to those who know how to listen.";
+    }
+
+    // Check for questions about knowledge or wisdom
+    if (inputLower.includes('know') || inputLower.includes('wisdom') || inputLower.includes('truth')) {
+      return "Knowledge is like the stars - countless points of light in the vast darkness. Which light will you follow?";
+    }
+
+    // Check for yes/no responses
+    if (inputLower === 'yes' || inputLower === 'no') {
+      return "The path of certainty often leads to uncertainty, and vice versa. Consider what lies beyond simple answers.";
+    }
+
+    // Default responses based on context
+    const contextualResponses = [
+      "The threads of fate weave a complex tapestry. Your role in it becomes clearer with each passing moment.",
+      "Some questions lead to deeper mysteries. Are you prepared to understand the answers you seek?",
+      "The ancient ones spoke of times like these. Listen carefully to the echoes of their wisdom.",
+      "Your journey has only begun. The path ahead holds both shadow and light.",
+      "In seeking answers, you have already begun to understand the questions."
     ];
 
-    try {
-      if (!this.pipeline) {
-        await this.initialize();
-      }
+    // Avoid repeating the last response
+    let response;
+    do {
+      response = contextualResponses[Math.floor(Math.random() * contextualResponses.length)];
+    } while (response === this.lastResponse);
 
-      // For now, return a random mystical response
-      const response = defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
-      this.updateMemory(input, response);
-      return response;
-
-    } catch (error) {
-      console.error('Failed to generate response:', error);
-      return defaultResponses[0];
-    }
+    this.lastResponse = response;
+    this.updateMemory(input, response);
+    return response;
   }
 
   private updateMemory(input: string, response: string) {
