@@ -16,73 +16,57 @@ export class AICharacter {
   async generateResponse(input: string): Promise<string> {
     const inputLower = input.toLowerCase();
     
+    // Questions about Luna herself
+    if (inputLower.includes('what') && inputLower.includes('wearing')) {
+      return "I wear robes of midnight blue, adorned with silver symbols that shift and change as you watch them. But my appearance is merely a reflection of deeper truths.";
+    }
+
+    if (inputLower.includes('what') && (inputLower.includes('do you do') || inputLower.includes('doing here'))) {
+      return "I observe the threads of fate and guide those who seek understanding. The forest's edge is where multiple paths converge, making it an ideal place to watch destinies unfold.";
+    }
+
     // Medallion-specific responses
     if (inputLower.includes('where') && inputLower.includes('medallion')) {
-      const medallionResponses = [
-        "The medallion's location is shrouded in mystery, but I sense its presence beneath our feet. The tavern keeper may know more...",
-        "Seek the depths below the tavern, but first you must find the key that was lost.",
-        "The path to the medallion begins with a key, and ends in darkness below."
-      ];
-      return this.getRandomResponse(medallionResponses);
+      return "The medallion lies beneath the tavern, in its ancient cellar. But you'll need the key from the forest's edge to unlock the path.";
     }
 
     // General medallion questions
     if (inputLower.includes('medallion')) {
-      const medallionResponses = [
-        "The Ancient Medallion holds power that few can comprehend. Its secrets are both a blessing and a curse.",
-        "Many have sought the medallion, but few understand its true purpose. Are you prepared for what you might find?",
-        "The medallion's power extends beyond the physical realm. Its true nature is known only to those who have gazed upon its symbols."
-      ];
-      return this.getRandomResponse(medallionResponses);
+      return "The Ancient Medallion is a powerful artifact hidden in the tavern's cellar. Grim, the tavern keeper, has long sought it. Find the key at the forest's edge, and you'll be able to reach it.";
     }
 
     // Forest-related responses
     if (inputLower.includes('forest')) {
-      const forestResponses = [
-        "The forest holds many secrets, including one that might help you on your quest. Look carefully near its edge.",
-        "In the forest's shadows, a key was lost... or perhaps, deliberately placed.",
-        "The trees whisper of hidden treasures and lost artifacts. Listen carefully to their song."
-      ];
-      return this.getRandomResponse(forestResponses);
+      return "The forest's edge holds a key that will help you on your quest. Look carefully among the shadows - what seems lost is often precisely where it needs to be.";
     }
 
     // Key-related responses
     if (inputLower.includes('key')) {
-      const keyResponses = [
-        "A mysterious key lies where shadow meets light, at the forest's edge.",
-        "The key you seek has found its way to nature's embrace.",
-        "Look to where the trees meet the town, there you might find what unlocks the path forward."
-      ];
-      return this.getRandomResponse(keyResponses);
+      return "The key you seek lies here at the forest's edge. It will unlock the cellar door in the tavern, where greater treasures await.";
     }
 
     // Greetings
     if (inputLower.includes('hello') || inputLower.includes('hi ') || inputLower === 'hi') {
       const greetings = [
-        "Greetings, seeker of truth. The stars speak of your arrival.",
-        "Welcome, wanderer. I've been expecting someone like you.",
-        "Ah, another soul drawn to the mysteries that surround us."
+        "Welcome, seeker. I am Luna, observer of paths and keeper of ancient knowledge.",
+        "Greetings. I am Luna, and I've been waiting for someone to ask the right questions.",
+        "Well met. I am Luna, and I sense you have questions about the medallion."
       ];
       return this.getRandomResponse(greetings);
     }
 
     // How are you
     if (inputLower.includes('how are you')) {
-      const statusResponses = [
-        "I exist in harmony with the forces that guide us all.",
-        "My state of being transcends simple measures of well-being.",
-        "I am as I must be, aligned with the cosmic threads that bind us."
-      ];
-      return this.getRandomResponse(statusResponses);
+      return "I exist in harmony with the forces that guide us all. But you didn't come here to inquire about my well-being - you seek the medallion, do you not?";
     }
 
-    // Default mysterious responses
+    // Default responses - now more helpful while maintaining mystery
     const defaultResponses = [
-      "The answers you seek may be closer than you realize.",
-      "Sometimes the path forward lies in understanding what's right before us.",
-      "Your questions hold wisdom in themselves. Consider what drives you to ask them.",
-      "The threads of fate weave a complex tapestry. Your role in it becomes clearer with each step.",
-      "There are no coincidences in your journey. Every choice leads to revelation."
+      "Ask me about the medallion, the forest, or the key - I may have insights that will aid your quest.",
+      "Your path leads to the tavern's cellar, but first you must find what was lost in these woods.",
+      "The key near the forest will unlock the way to the medallion below the tavern. What else would you know?",
+      "Seek first the key at the forest's edge, then the cellar beneath the tavern. The medallion awaits.",
+      "The answers you seek lie between the forest's edge and the tavern's depths. What would you know of either?"
     ];
     
     return this.getRandomResponse(defaultResponses);
