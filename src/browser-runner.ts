@@ -8,7 +8,6 @@ export class BrowserRunner {
   private outputEl: HTMLElement;
   private inputEl: HTMLInputElement;
   private buttonEl: HTMLButtonElement;
-  private processingCommand: boolean = false;
 
   constructor(outputId: string, inputId: string, buttonId: string) {
     this.engine = new GameEngine();
@@ -32,33 +31,23 @@ export class BrowserRunner {
     this.renderLog();
   }
 
-  private async handleInput(): Promise<void> {
-    if (this.processingCommand) return;
-    
+  private handleInput(): void {
     const input = this.inputEl.value.trim();
     if (!input) return;
-    
     this.inputEl.value = '';
-    this.processingCommand = true;
-    
-    try {
-      await this.parser.parseCommand(input);
-    } catch (error) {
-      console.error('Error processing command:', error);
-      this.print('An error occurred while processing your command.');
-    } finally {
-      this.processingCommand = false;
-      this.renderLocation();
-      this.renderLog();
-    }
+    this.parser.parseCommand(input);
+    this.renderLocation();
+    this.renderLog();
   }
 
   private print(msg: string): void {
     this.outputEl.innerHTML += `<div>${msg}</div>`;
-    this.outputEl.scrollTop = this.outputEl.scrollHeight;
   }
 
   private handleLookAround(): void {
+    // TEST: Always print a visible test message
+    this.outputEl.innerHTML += `<pre style='color: red; font-size: 2em;'>TEST MESSAGE</pre>`;
+    // Print location, characters, and items
     const desc = this.engine.lookAround();
     this.outputEl.innerHTML += `<pre>${desc}</pre>`;
     this.outputEl.scrollTop = this.outputEl.scrollHeight;
@@ -67,6 +56,8 @@ export class BrowserRunner {
   private renderLocation(): void {
     const state = this.engine.getState();
     const location = this.engine.getNodeById(state.currentLocation);
+    // Debug logging
+    console.log('Current location ID:', state.currentLocation, 'Location object:', location);
     if (!location) {
       this.outputEl.innerHTML = `<div><strong>ERROR:</strong> No valid location for "${state.currentLocation}"</div>`;
       return;
@@ -83,17 +74,13 @@ export class BrowserRunner {
     if (items.length > 0) {
       desc += '<div><strong>Items here:</strong> ' + items.map(i => i.name).join(', ') + '</div>';
     }
-    // Characters
-    const characters = this.engine.getCharactersInLocation();
-    if (characters.length > 0) {
-      desc += '<div><strong>Characters here:</strong> ' + characters.map(c => c.name).join(', ') + '</div>';
-    }
     this.outputEl.innerHTML = desc + '<hr>' + this.outputEl.innerHTML;
   }
 
   private renderLog(): void {
+    // Show the last 20 messages from the game log
     const log = this.engine.getState().gameLog.slice(-20);
-    this.outputEl.innerHTML = log.map(line => `<div>${line}</div>`).join('') + '<hr>' + this.outputEl.innerHTML;
+    this.outputEl.innerHTML = log.map(line => `<div>${line}</div>`).join('');
     this.outputEl.scrollTop = this.outputEl.scrollHeight;
   }
 }
