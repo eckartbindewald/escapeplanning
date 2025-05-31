@@ -316,6 +316,9 @@ Available commands:
       return;
     }
 
+    // Echo user input to game log
+    this.engine.addToLog(`> ${input}`);
+
     const tokens = input.trim().toLowerCase().split(/\s+/);
     const command = tokens[0];
     const args = tokens.slice(1);
