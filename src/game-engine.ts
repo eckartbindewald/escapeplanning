@@ -11,8 +11,10 @@ import {
   NodeType
 } from './types';
 import { loadGameData } from './data-loader';
+import OpenAI from 'openai';
 
 export class GameEngine {
+  private openai: OpenAI;
   private nodes: Node[] = [];
   private edges: Edge[] = [];
   private itemAttributes: ItemAttribute[] = [];
@@ -25,6 +27,10 @@ export class GameEngine {
   private gameEnded: boolean = false;
   
   constructor() {
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+    
     this.state = {
       currentLocation: '',
       inventory: [],
@@ -485,59 +491,48 @@ export class GameEngine {
     return true;
   }
 
-  private handleAICharacterDialog(character: Node): void {
-    // Get relevant game state for context
-    const hasKey = this.state.inventory.includes('item_3');
-    const hasMedallion = this.state.inventory.includes('item_4');
-    const isAtForestEdge = this.state.currentLocation === 'loc_2';
-    const isInTavern = this.state.currentLocation === 'loc_3';
-    const isInCellar = this.state.currentLocation === 'loc_5';
-    const questStarted = this.state.currentQuests['quest_4'];
+  private async handleAICharacterDialog(character: Node): Promise<void> {
+    // Build context for the AI
+    const context = {
+      character: character,
+      location: this.getNodeById(this.state.currentLocation),
+      inventory: this.state.inventory.map(id => this.getNodeById(id)),
+      quests: this.state.currentQuests,
+      gameState: this.state
+    };
 
-    switch (character.id) {
-      case 'char_3': // Shadowpaw
-        if (hasKey && isAtForestEdge) {
-          this.addToLog(`${character.name} eyes the key in your possession with knowing satisfaction.`);
-          this.addToLog(`"The key you found... it leads to hidden treasures. The tavern keeper's cellar holds more than just dust and cobwebs."`);
-        } else if (isAtForestEdge && !hasKey) {
-          this.addToLog(`${character.name} stretches lazily, but their eyes gleam with intelligence.`);
-          this.addToLog(`"Seeking something? *flicks tail* Sometimes what we search for lies in plain sight, where shadow meets light."`);
-          if (questStarted) {
-            this.addToLog(`"The tavern keeper's troubles echo through these woods. A lost key, perhaps?"`);
+    try {
+      const completion = await this.openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: `You are ${character.name}, ${character.description}. 
+                     Respond in character, considering the following context:
+                     - Current location: ${context.location?.name}
+                     - Player's inventory: ${context.inventory.map(item => item?.name).join(', ')}
+                     - Active quests: ${Object.values(context.quests).map(q => q.title).join(', ')}
+                     Keep responses brief (1-2 sentences) and mysterious/cryptic.`
+          },
+          {
+            role: "user",
+            content: "The player approaches and tries to talk to you."
           }
-        } else {
-          this.addToLog(`${character.name} watches you with mysterious interest, but offers no words.`);
-        }
-        break;
+        ],
+        max_tokens: 100,
+        temperature: 0.7
+      });
 
-      case 'char_4': // Luna
-        if (hasMedallion) {
-          this.addToLog(`${character.name} gazes at the medallion with ancient wisdom in her eyes.`);
-          this.addToLog(`"The artifact you carry resonates with forgotten power. Its journey is nearly complete."`);
-        } else if (isInCellar) {
-          this.addToLog(`${character.name}'s form shimmers in the dim light.`);
-          this.addToLog(`"Secrets lie in darkness, waiting to be uncovered. Search thoroughly."`);
-        } else {
-          this.addToLog(`${character.name} appears briefly, sharing a cryptic smile.`);
-          this.addToLog(`"The path you seek may not be straight, but every step has purpose."`);
-        }
-        break;
-
-      case 'char_5': // Zephyr
-        if (isInTavern && !hasKey) {
-          this.addToLog(`${character.name} materializes like morning mist.`);
-          this.addToLog(`"The forest holds many secrets. Some are meant to be found."`);
-        } else if (isInCellar) {
-          this.addToLog(`${character.name}'s ethereal form illuminates the darkness.`);
-          this.addToLog(`"What you seek lies hidden in shadow. Let your instincts guide you."`);
-        } else {
-          this.addToLog(`${character.name} appears momentarily, their presence both calming and mysterious.`);
-          this.addToLog(`"Trust in the journey. Each discovery leads to the next."`);
-        }
-        break;
-
-      default:
+      const response = completion.choices[0]?.message?.content;
+      if (response) {
+        this.addToLog(`${character.name}: "${response}"`);
+      } else {
         this.addToLog(`${character.name} acknowledges your presence but remains silent.`);
+      }
+    } catch (error) {
+      console.error('Error generating AI response:', error);
+      // Fallback to basic responses if API fails
+      this.addToLog(`${character.name} watches you with mysterious interest, but offers no words.`);
     }
   }
 
