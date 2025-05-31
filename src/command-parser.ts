@@ -110,6 +110,56 @@ export class CommandParser {
     this.registerAlias('l', 'look');
     this.registerAlias('x', 'look');
 
+    // Use command
+    this.registerCommand('use', async (args) => {
+      if (args.length === 0) {
+        this.engine.addToLog("Use what?");
+        return;
+      }
+      
+      const input = args.join(' ').toLowerCase();
+      const matches = input.match(/^(.*?)\s+(?:on|with)\s+(.*)$/);
+      
+      if (!matches) {
+        this.engine.addToLog("Try 'use [item] on [target]'");
+        return;
+      }
+      
+      const [_, itemName, targetName] = matches;
+      
+      // Find the item in inventory
+      const inventory = this.engine.getState().inventory
+        .map(id => this.engine.getNodeById(id))
+        .filter(item => item !== undefined);
+      
+      const item = inventory.find(item => 
+        item!.name.toLowerCase().includes(itemName) || 
+        item!.id.toLowerCase() === itemName
+      );
+      
+      if (!item) {
+        this.engine.addToLog(`You don't have ${itemName}.`);
+        return;
+      }
+      
+      // Find the target in the current location
+      const objectsHere = this.engine.getObjectsInLocation();
+      const charactersHere = this.engine.getCharactersInLocation();
+      const itemsHere = this.engine.getItemsInLocation();
+      
+      const target = [...objectsHere, ...charactersHere, ...itemsHere].find(obj =>
+        obj.name.toLowerCase().includes(targetName) ||
+        obj.id.toLowerCase() === targetName
+      );
+      
+      if (!target) {
+        this.engine.addToLog(`You don't see ${targetName} here.`);
+        return;
+      }
+      
+      this.engine.useItem(item.id, target.id);
+    });
+
     // Take command
     this.registerCommand('take', async (args) => {
       if (args.length === 0) {
@@ -191,6 +241,7 @@ Available commands:
 - look/examine/inspect [target]: Look around or examine something specific
 - take/get [item]: Pick up an item
 - drop [item]: Drop an item from your inventory
+- use [item] on [target]: Use an item on something
 - talk/speak [character]: Start a conversation with a character
 - inventory/i/inv: Check your inventory
 - help: Show this help text
