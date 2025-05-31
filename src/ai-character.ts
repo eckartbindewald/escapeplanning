@@ -4,6 +4,7 @@ export class AICharacter {
   private context: string[] = [];
   private maxMemory: number = 10;
   private lastResponse: string = '';
+  private lastTopic: string = '';
 
   constructor(
     private name: string,
@@ -16,96 +17,70 @@ export class AICharacter {
   async generateResponse(input: string): Promise<string> {
     const inputLower = input.toLowerCase();
     
-    // Personal questions
-    if (inputLower.includes('birthday')) {
-      return "Time flows differently for beings like me. I mark my existence not by years, but by the cycles of knowledge gained and shared.";
+    // Track conversation topics
+    const topics = this.identifyTopics(inputLower);
+    
+    // Personal questions with more variety
+    if (inputLower.includes('college') || inputLower.includes('school') || inputLower.includes('study')) {
+      return this.getRandomResponse([
+        "I studied with the ancient ones, in places between places. My education comes from watching the threads of time weave their patterns.",
+        "Knowledge flows like water - I drink from many streams. The forest itself is my teacher, as are the whispers of those who came before.",
+        "My learning comes not from institutions, but from the eternal dance of light and shadow, past and future."
+      ]);
     }
 
-    if (inputLower.includes('age') || inputLower.includes('old')) {
-      return "Age is but a number, and numbers hold little meaning for one who exists between moments. What matters is the wisdom I can share.";
+    if (inputLower.includes('knowledge') || inputLower.includes('how did you') || inputLower.includes('how do you know')) {
+      return this.getRandomResponse([
+        "My knowledge comes from watching the threads of time interweave. I see patterns others might miss.",
+        "The forest speaks to those who listen, and I have listened for a very long time.",
+        "Some truths reveal themselves only to those who stand at the edge of what is known. That is where I dwell."
+      ]);
     }
 
-    if (inputLower.includes('what') && inputLower.includes('wearing')) {
-      return "I wear robes of midnight blue, adorned with silver symbols that shift and change as you watch them. Each pattern tells a story of what was and what may be.";
+    // Location-specific responses with more detail
+    if (topics.includes('tavern')) {
+      return this.getRandomResponse([
+        "The tavern's foundations rest upon ancient stones, each one holding memories of what lies beneath.",
+        "Grim tends his tavern well, though even he doesn't fully understand what he guards. The cellar holds more than just wine and memories.",
+        "Listen carefully in the tavern - sometimes the walls themselves whisper secrets about what lies below."
+      ]);
     }
 
-    if (inputLower.includes('what') && (inputLower.includes('do you do') || inputLower.includes('doing here'))) {
-      return "I observe the threads of fate and guide those who seek understanding. The forest's edge is where multiple paths converge, making it an ideal place to watch destinies unfold.";
-    }
-
-    // Location-specific questions
-    if (inputLower.includes('tavern')) {
-      if (inputLower.includes('nice')) {
-        return "The tavern holds both warmth and secrets. Grim keeps it well, though his gruff exterior hides a keeper of ancient knowledge. The real mysteries lie beneath its floorboards.";
-      }
-      return "The tavern is more than it appears. Its cellar holds the medallion you seek, but the path there requires both key and courage.";
-    }
-
-    // Medallion-specific responses
-    if (inputLower.includes('where') && inputLower.includes('medallion')) {
-      return "The medallion lies beneath the tavern, in its ancient cellar. But you'll need the key from the forest's edge to unlock the path.";
-    }
-
-    // General medallion questions
-    if (inputLower.includes('medallion')) {
-      return "The Ancient Medallion is a powerful artifact hidden in the tavern's cellar. Grim, the tavern keeper, has long sought it. Find the key at the forest's edge, and you'll be able to reach it.";
-    }
-
-    // Forest-related responses
-    if (inputLower.includes('forest')) {
-      return "The forest's edge holds a key that will help you on your quest. Look carefully among the shadows - what seems lost is often precisely where it needs to be.";
-    }
-
-    // Key-related responses
-    if (inputLower.includes('key')) {
-      return "The key you seek lies here at the forest's edge. It will unlock the cellar door in the tavern, where greater treasures await.";
-    }
-
-    // General knowledge questions
-    if (inputLower.includes('what') && inputLower.includes('know')) {
-      return "I know of the medallion's power, the forest's secrets, and the tavern's hidden depths. I know of your quest and the path you must take. What specific knowledge do you seek?";
-    }
-
-    // Greetings
-    if (inputLower.includes('hello') || inputLower.includes('hi ') || inputLower === 'hi') {
-      const greetings = [
-        "Welcome, seeker. I am Luna, observer of paths and keeper of ancient knowledge.",
-        "Greetings. I am Luna, and I've been waiting for someone to ask the right questions.",
-        "Well met. I am Luna, and I sense you have questions about the medallion."
-      ];
-      return this.getRandomResponse(greetings);
-    }
-
-    // How are you
-    if (inputLower.includes('how are you')) {
-      const responses = [
-        "I exist in harmony with the forces that guide us all. But you didn't come here to inquire about my well-being - you seek the medallion, do you not?",
-        "My state of being is as constant as the stars, yet as changing as the moon. But let us speak of your journey instead.",
-        "I am as I should be, watching the threads of fate weave their patterns. What guidance do you seek today?"
-      ];
-      return this.getRandomResponse(responses);
-    }
-
-    // Default responses - more varied and contextual
+    // More varied default responses
     const defaultResponses = [
-      "Ask me about the medallion, the forest, or the key - I may have insights that will aid your quest.",
-      "Your path leads to the tavern's cellar, but first you must find what was lost in these woods.",
-      "The key near the forest will unlock the way to the medallion below the tavern. What else would you know?",
-      "Seek first the key at the forest's edge, then the cellar beneath the tavern. The medallion awaits.",
-      "The answers you seek lie between the forest's edge and the tavern's depths. What would you know of either?",
-      "Sometimes the simplest questions reveal the deepest truths. What would you like to know?",
-      "The forest whispers secrets to those who listen. The tavern holds mysteries for those who search.",
-      "Your quest intertwines with ancient powers. What guidance do you seek?"
+      "The questions you ask reveal as much as the answers you seek. What truth do you really hunt for?",
+      "Sometimes the path forward requires us to look in unexpected directions. What do your instincts tell you?",
+      "I sense you seek more than just the medallion. What other mysteries call to you?",
+      "The forest edge is where certainty meets mystery. Which side do you stand on?",
+      "Your arrival here was no accident. The patterns have been leading to this moment."
     ];
     
     return this.getRandomResponse(defaultResponses);
   }
 
+  private identifyTopics(input: string): string[] {
+    const topics = [];
+    const keywords = {
+      medallion: ['medallion', 'artifact', 'treasure'],
+      forest: ['forest', 'woods', 'trees'],
+      tavern: ['tavern', 'inn', 'cellar', 'basement'],
+      key: ['key', 'unlock', 'locked'],
+      knowledge: ['know', 'learn', 'understand', 'wisdom']
+    };
+
+    for (const [topic, words] of Object.entries(keywords)) {
+      if (words.some(word => input.includes(word))) {
+        topics.push(topic);
+      }
+    }
+
+    return topics;
+  }
+
   private getRandomResponse(responses: string[]): string {
-    let response;
-    do {
-      response = responses[Math.floor(Math.random() * responses.length)];
-    } while (response === this.lastResponse && responses.length > 1);
+    // Avoid repeating the last response
+    const filteredResponses = responses.filter(r => r !== this.lastResponse);
+    const response = filteredResponses[Math.floor(Math.random() * filteredResponses.length)] || responses[0];
     
     this.lastResponse = response;
     this.updateMemory(response);
