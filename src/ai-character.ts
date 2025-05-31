@@ -33,6 +33,10 @@ export class AICharacter {
   private maxMemory: number = 30;
   private lastResponse: string = '';
   private conversationCount: number = 0;
+  private recentTopics: string[] = [];
+  private maxTopics: number = 5;
+  private lastTopic: string = '';
+  private characterResponses: Record<string, string[]> = {};
   
   // Game state integration
   private gameState?: GameState;
@@ -47,16 +51,26 @@ export class AICharacter {
   private emotionalState: number = 0; // Range: -1 to 1
   
   // Emotive actions for character expression
-  private emotiveActions: string[] = [
-    '*smiles warmly*',
-    '*nods thoughtfully*',
-    '*tilts head curiously*',
-    '*pauses reflectively*',
-    '*gestures gently*',
-    '*gazes thoughtfully*',
-    '*eyes show interest*',
-    '*leans forward slightly*'
-  ];
+  private emotiveActions: Record<EmotionState, string[]> = {
+    positive: [
+      '*smiles warmly*',
+      '*nods enthusiastically*',
+      '*eyes light up*',
+      '*gestures excitedly*'
+    ],
+    neutral: [
+      '*tilts head thoughtfully*',
+      '*pauses reflectively*',
+      '*gestures gently*',
+      '*gazes thoughtfully*'
+    ],
+    empathetic: [
+      '*leans forward with concern*',
+      '*nods understandingly*',
+      '*offers a sympathetic smile*',
+      '*listens attentively*'
+    ]
+  };
   
   /**
    * Creates a new AI character powered by a local LLM
@@ -92,114 +106,6 @@ export class AICharacter {
   /**
    * Main method to generate a response to player input using a local LLM
    */
-  async generateResponse(input: string): Promise<string> {
-    // Analyze sentiment
-    const sentimentResult = this.sentiment.analyze(input);
-    this.emotionalState = (this.emotionalState + sentimentResult.comparative) / 2;
-    
-    // Update conversation history
-    this.context.push(`Player: ${input}`);
-    
-    // Generate the prompt for the LLM
-    const prompt = this.createPrompt(input);
-    
-    // Get response from LLM
-    let response = await this.llm.generateText(prompt, 150);
-    
-    // Add an emotive action based on emotional state
-    response = this.addEmotiveAction(response);
-    
-    // Update conversation context with the response
-    this.lastResponse = response;
-    this.context.push(`${this.name}: ${response}`);
-    
-    // Limit context size
-    if (this.context.length > this.maxMemory) {
-      this.context = this.context.slice(-this.maxMemory);
-    }
-    
-    // Track conversation count
-    this.conversationCount++;
-    
-    // Apply emotional decay over time
-    if (this.conversationCount % 3 === 0) {
-      this.emotionalState *= 0.8; // Gradually return to neutral
-    }
-    
-    return response;
-  }
-  
-  /**
-   * Creates a detailed prompt for the LLM based on current context
-   */
-  private createPrompt(input: string): string {
-    // Build character description
-    let prompt = `You are ${this.name}, ${this.personality}. `;
-    
-    // Add current game state information if available
-    if (this.gameState) {
-      prompt += `The current location is ${this.gameState.currentLocation || 'unknown'}. `;
-      
-      // Add inventory information if available
-      if (this.gameState.inventory && this.gameState.inventory.length > 0) {
-        prompt += `The player has the following items: ${this.gameState.inventory.join(', ')}. `;
-      }
-    }
-    
-    // Add game nodes information if available
-    if (this.gameNodes && this.gameNodes.length > 0) {
-      // Extract characters at current location
-      const charactersNearby = this.gameNodes
-        .filter(node => node.type === 'character' && node.name && node.name !== this.name)
-        .map(char => char.name)
-        .filter(Boolean);
-      
-      if (charactersNearby.length > 0) {
-        prompt += `\nCharacters nearby: ${charactersNearby.join(', ')}. `;
-      }
-    }
-    
-    // Add quest information if available
-    if (this.gameQuests && this.gameQuests.length > 0) {
-      const activeQuests = this.gameQuests
-        .filter(quest => quest.title)
-        .map(quest => quest.title)
-        .filter(Boolean);
-      
-      if (activeQuests.length > 0) {
-        prompt += `\nActive quests: ${activeQuests.join(', ')}. `;
-      }
-    }
-    
-    // Add knowledge base facts that might be relevant
-    if (this.knowledgeBase.length > 0) {
-      prompt += `\nYou know the following facts:\n- ${this.knowledgeBase.join('\n- ')}\n`;
-    }
-    
-    // Add recent conversation context
-    if (this.context.length > 0) {
-      prompt += `\nRecent conversation history:\n${this.context.slice(-5).join('\n')}\n`;
-    }
-    
-    // Add final instruction
-    prompt += `\nPlayer: ${input}\n${this.name}: `;
-    
-    return prompt;
-  }
-  
-  /**
-   * Adds an emotive action to the response based on emotional state
-   */
-  private addEmotiveAction(response: string): string {
-    // Select a random emotive action
-    const randomIndex = Math.floor(Math.random() * this.emotiveActions.length);
-    const action = this.emotiveActions[randomIndex];
-    
-    // Add the action at the beginning or end of the response
-    return Math.random() > 0.5 ? `${action} ${response}` : `${response} ${action}`;
-  }
-}
-
   async generateResponse(input: string): Promise<string> {
     // Analyze input using NLP techniques
     const topics = this.extractTopics(input);
@@ -250,17 +156,10 @@ export class AICharacter {
   }
 
   private extractTopics(input: string): string[] {
-    const doc = nlp(input);
-    const nouns = doc.nouns().out('array');
-    const verbs = doc.verbs().out('array');
-    const adjectives = doc.adjectives().out('array');
-    
-    const allTopics = [...nouns, ...verbs, ...adjectives]
-      .map(t => t.toLowerCase())
-      .filter(t => t.length > 2); // Filter out very short words
-    
-    // Remove duplicates
-    return [...new Set(allTopics)];
+    // Simple word extraction for topics
+    return input.toLowerCase()
+      .split(/\W+/)
+      .filter(word => word.length > 2);
   }
 
   /**
@@ -384,8 +283,9 @@ export class AICharacter {
    * Handles different types of questions based on question words
    */
   private async handleQuestion(input: string, topics: string[]): Promise<string | null> {
-    // Check for specific question types
-    const questionWords = nlp(input).match('(what|why|how|where|when|who)').out('array');
+    // Simple question word detection
+    const questionWords = ['what', 'why', 'how', 'where', 'when', 'who']
+      .filter(word => input.toLowerCase().includes(word));
     
     // Location questions
     if (questionWords.includes('where') && this.gameState) {
@@ -403,7 +303,7 @@ export class AICharacter {
     
     // Questions about other characters
     const characterTopics = this.gameNodes ? topics.filter(t => 
-      this.gameNodes.some(n => n.type === 'character' && n.name.toLowerCase().includes(t))
+      this.gameNodes.some(n => n.type === 'character' && n.name?.toLowerCase().includes(t))
     ) : [];
     
     if (characterTopics.length > 0 && this.gameNodes) {
@@ -543,4 +443,16 @@ export class AICharacter {
     const actions = this.emotiveActions[emotionType];
     return actions[Math.floor(Math.random() * actions.length)];
   }
+
+  private updateContext(input: string, response: string): void {
+    this.context.push(`User: ${input}`);
+    this.context.push(`${this.name}: ${response}`);
+    
+    // Maintain context size limit
+    while (this.context.length > this.maxMemory) {
+      this.context.shift();
+    }
+  }
 }
+
+type EmotionState = 'positive' | 'neutral' | 'empathetic';
