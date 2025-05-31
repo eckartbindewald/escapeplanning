@@ -56,7 +56,6 @@ export class CommandParser {
         return;
       }
       
-      // Try to find the item/character/object to look at
       const target = args.join(' ').toLowerCase();
       
       // Check inventory
@@ -165,7 +164,6 @@ export class CommandParser {
         return;
       }
       
-      // Parse "use X on Y" or "use X"
       let itemName = args[0].toLowerCase();
       let targetName = null;
       
@@ -255,26 +253,6 @@ export class CommandParser {
     });
     this.registerAlias('speak', 'talk');
 
-    // Dialog response
-    this.registerCommand('say', async (args) => {
-      if (args.length === 0) {
-        this.engine.addToLog("Say what?");
-        return;
-      }
-      
-      const dialog = this.engine.getState().currentDialog;
-      if (!dialog) {
-        this.engine.addToLog("You're not in a conversation.");
-        return;
-      }
-
-      // Get the full input text
-      const input = args.join(' ');
-      await this.engine.respondToDialog(input);
-    });
-    this.registerAlias('respond', 'say');
-    this.registerAlias('answer', 'say');
-
     // Inventory command
     this.registerCommand('inventory', async (args) => {
       this.engine.getInventory();
@@ -298,7 +276,6 @@ Available commands:
 - drop [item]: Drop an item from your inventory
 - use [item] (on/with [target]): Use an item, optionally on a target
 - talk/speak [character]: Start a conversation with a character
-- say/respond [number/text]: Choose a dialog response by number or text
 - inventory/i/inv: Check your inventory
 - quests/q: View your active quests
 - help: Show this help text
@@ -343,6 +320,13 @@ Available commands:
     const command = tokens[0];
     const args = tokens.slice(1);
 
+    // If in a dialog, treat input as dialog response
+    const currentDialog = this.engine.getState().currentDialog;
+    if (currentDialog) {
+      await this.engine.respondToDialog(input);
+      return;
+    }
+
     // Check for direct command
     if (this.commands.has(command)) {
       const handler = this.commands.get(command)!;
@@ -364,7 +348,6 @@ Available commands:
     }
 
     // Try to parse full sentence commands
-    // For example: "pick up the sword" -> "take sword"
     const fullCommand = tokens.join(' ');
     
     if (fullCommand.match(/^(pick|take|get)\s+up\s+/i)) {
@@ -388,12 +371,14 @@ Available commands:
       return;
     }
 
-    // If in a dialog, try to handle as a dialog response
-    const currentDialog = this.engine.getState().currentDialog;
-    if (currentDialog) {
-      const handler = this.commands.get('say')!;
-      await handler(tokens);
-      return;
+    // Check for nearby characters to talk to
+    const charactersHere = this.engine.getCharactersInLocation();
+    for (const character of charactersHere) {
+      if (character.type === 'character' && character.subtype === 'aic') {
+        await this.engine.talkTo(character.id);
+        await this.engine.respondToDialog(input);
+        return;
+      }
     }
 
     this.engine.addToLog(`I don't understand '${input}'. Type 'help' for a list of commands.`);
