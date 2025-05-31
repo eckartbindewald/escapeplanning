@@ -26,6 +26,11 @@ export class AICharacter {
   }
 
   async generateResponse(input: string): Promise<string> {
+    // Check for exit commands first
+    if (input.toLowerCase() === 'exit' || input.toLowerCase() === 'bye' || input.toLowerCase() === 'goodbye') {
+      return "Farewell, until we meet again.";
+    }
+
     // Analyze input
     const topics = this.extractTopics(input);
     const sentiment = this.analyzeSentiment(input);

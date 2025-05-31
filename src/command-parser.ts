@@ -276,6 +276,7 @@ Available commands:
 - drop [item]: Drop an item from your inventory
 - use [item] (on/with [target]): Use an item, optionally on a target
 - talk/speak [character]: Start a conversation with a character
+- exit/bye/goodbye: End the current conversation
 - inventory/i/inv: Check your inventory
 - quests/q: View your active quests
 - help: Show this help text
