@@ -25,10 +25,20 @@ export class BrowserRunner {
   }
 
   public async start(): Promise<void> {
-    await this.engine.initialize();
-    this.print('Welcome to Escape Planning! Type "help" for commands.');
-    this.renderLocation();
-    this.renderLog();
+    // Clear any existing content
+    this.outputEl.innerHTML = '';
+    
+    // Show loading message
+    this.print('Loading game...');
+    
+    try {
+      await this.engine.initialize();
+      this.renderLocation();
+      this.renderLog();
+    } catch (error) {
+      console.error('Error starting game:', error);
+      this.print('Error starting game. Please refresh the page to try again.');
+    }
   }
 
   private async handleInput(): Promise<void> {
@@ -79,7 +89,7 @@ export class BrowserRunner {
   }
 
   private renderLog(): void {
-    const log = this.engine.getState().gameLog.slice(-20);
+    const log = this.engine.getState().gameLog;
     const logHtml = log.map(line => `<div>${line}</div>`).join('');
     this.outputEl.innerHTML = logHtml;
     this.outputEl.scrollTop = this.outputEl.scrollHeight;

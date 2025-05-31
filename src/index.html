@@ -26,6 +26,7 @@
       padding: 10px;
       background-color: #111;
       border: 1px solid #444;
+      line-height: 1.5;
     }
     #game-output pre {
       color: #eee;
@@ -42,6 +43,7 @@
       background-color: #333;
       color: #fff;
       border: 1px solid #555;
+      font-family: 'Courier New', monospace;
     }
     #game-button {
       padding: 10px 16px;
@@ -50,6 +52,7 @@
       border: 1px solid #555;
       cursor: pointer;
       margin-left: 10px;
+      font-family: 'Courier New', monospace;
     }
     #game-button:hover {
       background-color: #666;
@@ -61,6 +64,7 @@
       color: #fff;
       border: none;
       cursor: pointer;
+      font-family: 'Courier New', monospace;
     }
     .action-button:hover {
       background-color: #666;
@@ -81,12 +85,23 @@
     .success-message {
       color: #66ff66;
     }
+    .loading-message {
+      color: #4dabf7;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.5; }
+      50% { opacity: 1; }
+      100% { opacity: 0.5; }
+    }
   </style>
 </head>
 <body>
   <h1>Escape Planning: Text-Based RPG</h1>
   <div id="game-container">
-    <div id="game-output"></div>
+    <div id="game-output">
+      <div class="loading-message">Loading game...</div>
+    </div>
     <input id="game-input" type="text" placeholder="What will you do?" autofocus />
     <button id="game-button">Enter</button>
     <button id="look-button" class="action-button">Look Around</button>
