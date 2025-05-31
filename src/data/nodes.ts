@@ -7,6 +7,7 @@ export const nodes: Node[] = [
   { id: 'char_1', type: 'character', subtype: 'npc', name: 'Elara', description: 'The village healer, known for her kindness.' },
   { id: 'char_2', type: 'character', subtype: 'npc', name: 'Grim', description: 'The grumpy tavern keeper.' },
   { id: 'char_3', type: 'character', subtype: 'animal', name: 'Shadowpaw', description: 'A stealthy cat lurking near the forest.' },
+  { id: 'char_4', type: 'character', subtype: 'aic', name: 'Luna', description: 'A mysterious being who speaks in riddles and seems to know more than she reveals.' },
   { id: 'item_1', type: 'item', subtype: 'potion', name: 'Healing Potion', description: 'A small vial that restores health.' },
   { id: 'item_2', type: 'item', subtype: 'weapon', name: 'Rusty Sword', description: 'An old, worn sword found in the tavern.' },
   { id: 'item_3', type: 'item', subtype: 'key', name: 'Mysterious Key', description: 'A key with unknown origins, found at the forest edge.' },

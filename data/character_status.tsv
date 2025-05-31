@@ -11,3 +11,7 @@ char_3	player_1	health	30
 char_3	player_1	max_health	30
 char_3	player_1	attack	4
 char_3	player_1	location	loc_2
+char_4	player_1	health	100
+char_4	player_1	max_health	100
+char_4	player_1	attack	0
+char_4	player_1	location	loc_2
