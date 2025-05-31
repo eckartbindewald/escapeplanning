@@ -48,6 +48,7 @@ export class GameEngine {
     this.quests = data.quests || [];
     
     this.state.currentLocation = startLocation;
+    this.addToLog('Welcome to Escape Planning! Type "help" for commands.');
     this.addToLog(`You find yourself in ${this.getNodeById(startLocation)?.name || 'an unknown location'}.`);
     
     // Generate Luna's welcome message
@@ -55,11 +56,15 @@ export class GameEngine {
     if (luna) {
       try {
         const welcomeMessage = await luna.generateResponse("Welcome the player to the game with a mysterious and intriguing message");
-        this.addToLog(`\nLuna appears before you in a shimmer of light and speaks:`);
-        this.addToLog(`"${welcomeMessage}"`);
+        this.addToLog(`\nA mysterious figure appears before you in a shimmer of ethereal light...`);
+        this.addToLog(`Luna: "${welcomeMessage}"`);
+        this.lookAround(); // Show the initial location description after Luna's welcome
       } catch (error) {
         console.error('Failed to generate welcome message:', error);
+        this.lookAround(); // Ensure location is shown even if welcome fails
       }
+    } else {
+      this.lookAround(); // Show location if Luna isn't available
     }
     
     // Start the medallion quest automatically

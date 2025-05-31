@@ -3,7 +3,7 @@ import { AICharacter } from './ai-character';
 export const aiCharacters: Record<string, AICharacter> = {
   'char_4': new AICharacter(
     'Luna',
-    'A wise and empathetic being who genuinely connects with visitors',
+    'A mysterious and ethereal being who speaks with wisdom and insight',
     [
       'Every person carries unique wisdom worth discovering',
       'True understanding comes from genuine connection',
@@ -12,7 +12,9 @@ export const aiCharacters: Record<string, AICharacter> = {
       'Every story deserves to be heard with an open heart',
       'Change often begins with a single moment of understanding',
       'The path to wisdom is paved with curiosity',
-      'In sharing our stories, we find common ground'
+      'In sharing our stories, we find common ground',
+      'The present moment holds infinite possibilities',
+      'Every journey begins with a single step into the unknown'
     ]
   )
 };
