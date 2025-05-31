@@ -120,22 +120,12 @@ export class GameEngine {
   }
 
   public getCharactersInLocation(): Node[] {
-    const charactersWithStatus = this.characterStatus
+    const charactersHere = this.characterStatus
       .filter(status => status.attribute === 'location' && status.value === this.state.currentLocation)
       .map(status => this.getNodeById(status.character_id))
       .filter((node): node is Node => node !== undefined && node.type === 'character');
     
-    const staticCharacters = this.nodes.filter(node => 
-      node.type === 'character' && 
-      !this.characterStatus.some(status => status.character_id === node.id)
-    );
-    
-    const allCharacters = [...charactersWithStatus, ...staticCharacters];
-    const uniqueCharacters = allCharacters.filter((char, index) => 
-      allCharacters.findIndex(c => c.id === char.id) === index
-    );
-    
-    return uniqueCharacters;
+    return charactersHere;
   }
 
   public getObjectsInLocation(): Node[] {
@@ -456,7 +446,7 @@ export class GameEngine {
       this.addToLog("That character isn't here.");
       return false;
     }
-
+    
     // Handle AI characters
     if (character.subtype === 'aic') {
       const aiCharacter = aiCharacters[characterId];
@@ -473,7 +463,7 @@ export class GameEngine {
           npc_id: characterId,
           parent_id: null,
           text: response,
-          responses: [{ text: "Continue...", next_id: "ai_dialog" }]
+          responses: []
         };
         return true;
       } catch (error) {
@@ -506,7 +496,7 @@ export class GameEngine {
     return true;
   }
 
-  public async respondToDialog(responseIndex: number): Promise<boolean> {
+  public async respondToDialog(input: string): Promise<boolean> {
     if (this.gameEnded) {
       this.addToLog("The game has ended. Thanks for playing!");
       return false;
@@ -517,15 +507,15 @@ export class GameEngine {
       return false;
     }
 
-    // Handle AI character dialog
-    if (this.state.currentDialog.id === 'ai_dialog') {
-      const character = this.getNodeById(this.state.currentDialog.npc_id);
-      if (!character || character.subtype !== 'aic') {
-        this.addToLog("The conversation ends.");
-        this.state.currentDialog = null;
-        return false;
-      }
+    const character = this.getNodeById(this.state.currentDialog.npc_id);
+    if (!character) {
+      this.addToLog("The conversation ends.");
+      this.state.currentDialog = null;
+      return false;
+    }
 
+    // Handle AI character dialog
+    if (character.subtype === 'aic') {
       const aiCharacter = aiCharacters[character.id];
       if (!aiCharacter) {
         this.addToLog("The conversation ends.");
@@ -534,14 +524,15 @@ export class GameEngine {
       }
 
       try {
-        const response = await aiCharacter.generateResponse("Tell me more");
+        const response = await aiCharacter.generateResponse(input);
+        this.addToLog(`You: "${input}"`);
         this.addToLog(`${character.name}: "${response}"`);
         this.state.currentDialog = {
           id: 'ai_dialog',
           npc_id: character.id,
           parent_id: null,
           text: response,
-          responses: [{ text: "Continue...", next_id: "ai_dialog" }]
+          responses: []
         };
         return true;
       } catch (error) {
@@ -551,68 +542,77 @@ export class GameEngine {
         return false;
       }
     }
-    
+
+    // Handle regular NPC dialog
     if (!this.state.currentDialog.responses) {
-      this.addToLog("You're not in a conversation.");
-      return false;
-    }
-    
-    if (responseIndex < 0 || responseIndex >= this.state.currentDialog.responses.length) {
-      this.addToLog("That's not a valid response option.");
-      return false;
-    }
-    
-    const selectedResponse = this.state.currentDialog.responses[responseIndex];
-    this.addToLog(`You: "${selectedResponse.text}"`);
-    
-    // Check if this is the medallion completion dialog
-    if (selectedResponse.next_id === 'dialog_12' && !this.state.inventory.includes('item_4')) {
-      this.addToLog("You don't have the Ancient Medallion.");
-      return false;
-    }
-    
-    // Find next dialog node
-    const nextDialog = this.dialogs.find(dialog => dialog.id === selectedResponse.next_id);
-    if (!nextDialog) {
       this.addToLog("The conversation ends.");
       this.state.currentDialog = null;
+      return false;
+    }
+
+    // Try to match by number first
+    if (/^\d+$/.test(input)) {
+      const responseIndex = parseInt(input) - 1;
+      if (responseIndex >= 0 && responseIndex < this.state.currentDialog.responses.length) {
+        const selectedResponse = this.state.currentDialog.responses[responseIndex];
+        this.addToLog(`You: "${selectedResponse.text}"`);
+        
+        const nextDialog = this.dialogs.find(dialog => dialog.id === selectedResponse.next_id);
+        if (!nextDialog) {
+          this.addToLog("The conversation ends.");
+          this.state.currentDialog = null;
+          return true;
+        }
+        
+        this.addToLog(`${character.name}: "${nextDialog.text}"`);
+        this.state.currentDialog = nextDialog;
+        
+        if (nextDialog.responses && nextDialog.responses.length > 0) {
+          this.addToLog("You can respond with:");
+          nextDialog.responses.forEach((response, index) => {
+            this.addToLog(`${index + 1}. ${response.text}`);
+          });
+        } else {
+          this.state.currentDialog = null;
+        }
+        
+        return true;
+      }
+    }
+
+    // Try to match by text
+    const responseIndex = this.state.currentDialog.responses.findIndex(
+      response => response.text.toLowerCase().includes(input.toLowerCase())
+    );
+
+    if (responseIndex >= 0) {
+      const selectedResponse = this.state.currentDialog.responses[responseIndex];
+      this.addToLog(`You: "${selectedResponse.text}"`);
+      
+      const nextDialog = this.dialogs.find(dialog => dialog.id === selectedResponse.next_id);
+      if (!nextDialog) {
+        this.addToLog("The conversation ends.");
+        this.state.currentDialog = null;
+        return true;
+      }
+      
+      this.addToLog(`${character.name}: "${nextDialog.text}"`);
+      this.state.currentDialog = nextDialog;
+      
+      if (nextDialog.responses && nextDialog.responses.length > 0) {
+        this.addToLog("You can respond with:");
+        nextDialog.responses.forEach((response, index) => {
+          this.addToLog(`${index + 1}. ${response.text}`);
+        });
+      } else {
+        this.state.currentDialog = null;
+      }
+      
       return true;
     }
-    
-    // Handle medallion quest completion through dialog
-    if (nextDialog.id === 'dialog_12' && this.state.inventory.includes('item_4')) {
-      // Remove medallion from inventory
-      this.state.inventory = this.state.inventory.filter(id => id !== 'item_4');
-      
-      // Complete the quest and end the game
-      this.completeQuest('quest_4');
-      this.endGame();
-    }
-    
-    // Get character name
-    const character = this.getNodeById(nextDialog.npc_id);
-    if (character) {
-      this.addToLog(`${character.name}: "${nextDialog.text}"`);
-    } else {
-      this.addToLog(`"${nextDialog.text}"`);
-    }
-    
-    // Update current dialog
-    this.state.currentDialog = nextDialog;
-    
-    // Show response options
-    if (nextDialog.responses && nextDialog.responses.length > 0) {
-      this.addToLog("You can respond with:");
-      nextDialog.responses.forEach((response, index) => {
-        this.addToLog(`${index + 1}. ${response.text}`);
-      });
-    } else {
-      // End conversation if no responses
-      this.state.currentDialog = null;
-      this.addToLog("The conversation ends.");
-    }
-    
-    return true;
+
+    this.addToLog("That's not a valid response.");
+    return false;
   }
 
   public getInventory(): string {

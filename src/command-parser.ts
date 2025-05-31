@@ -268,27 +268,9 @@ export class CommandParser {
         return;
       }
 
-      const input = args.join(' ').toLowerCase();
-      
-      // First try to match by number
-      if (/^\d+$/.test(input)) {
-        const responseIndex = parseInt(input) - 1;
-        if (responseIndex >= 0 && responseIndex < dialog.responses.length) {
-          await this.engine.respondToDialog(responseIndex);
-          return;
-        }
-      }
-      
-      // Then try to match by text
-      const responseIndex = dialog.responses.findIndex(response => 
-        response.text.toLowerCase().includes(input)
-      );
-      
-      if (responseIndex >= 0) {
-        await this.engine.respondToDialog(responseIndex);
-      } else {
-        this.engine.addToLog("That's not a valid response. Try using the number of the response you want to give.");
-      }
+      // Get the full input text
+      const input = args.join(' ');
+      await this.engine.respondToDialog(input);
     });
     this.registerAlias('respond', 'say');
     this.registerAlias('answer', 'say');
