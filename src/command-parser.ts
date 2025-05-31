@@ -319,16 +319,16 @@ Available commands:
     // Echo user input to game log
     this.engine.addToLog(`> ${input}`);
 
-    const tokens = input.trim().toLowerCase().split(/\s+/);
-    const command = tokens[0];
-    const args = tokens.slice(1);
-
     // If in a dialog, treat input as dialog response
     const currentDialog = this.engine.getState().currentDialog;
     if (currentDialog) {
       await this.engine.respondToDialog(input);
       return;
     }
+
+    const tokens = input.trim().toLowerCase().split(/\s+/);
+    const command = tokens[0];
+    const args = tokens.slice(1);
 
     // Check for direct command
     if (this.commands.has(command)) {
@@ -376,12 +376,15 @@ Available commands:
 
     // Check for nearby characters to talk to
     const charactersHere = this.engine.getCharactersInLocation();
-    for (const character of charactersHere) {
-      if (character.type === 'character' && character.subtype === 'aic') {
-        await this.engine.talkTo(character.id);
-        await this.engine.respondToDialog(input);
-        return;
-      }
+    const aiCharacter = charactersHere.find(char => 
+      char.type === 'character' && 
+      char.subtype === 'aic' && 
+      input.toLowerCase().includes(char.name.toLowerCase())
+    );
+
+    if (aiCharacter) {
+      await this.engine.talkTo(aiCharacter.id);
+      return;
     }
 
     this.engine.addToLog(`I don't understand '${input}'. Type 'help' for a list of commands.`);
