@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test-llm": "node test-llm.js"
+    "test-llm": "vite serve test-llm.html"
   },
   "dependencies": {
     "@xenova/transformers": "^2.6.1",

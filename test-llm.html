@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LLM Test</title>
+</head>
+<body>
+  <h1>Testing LLM</h1>
+  <pre id="output"></pre>
+
+  <script type="module">
+    import { pipeline, env } from '@xenova/transformers';
+
+    // Configure transformers.js
+    env.useBrowserCache = false;
+    env.allowLocalModels = false;
+
+    const output = document.getElementById('output');
+
+    function log(message) {
+      output.textContent += message + '\n';
+      console.log(message);
+    }
+
+    async function testLLM() {
+      log('Testing LLM model Xenova/LaMini-Flan-T5-783M...');
+      
+      try {
+        log('Initializing pipeline...');
+        const generator = await pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-783M');
+        
+        log('Generating test response...');
+        const result = await generator('Tell me a short story about a wise owl', {
+          max_new_tokens: 100,
+          temperature: 0.7,
+          do_sample: true
+        });
+        
+        log('\nGenerated Response:');
+        log(result[0].generated_text);
+        log('\nModel test completed successfully!');
+        
+      } catch (error) {
+        log('\nError testing LLM:');
+        log(error.toString());
+      }
+    }
+
+    testLLM();
+  </script>
+</body>
+</html>
