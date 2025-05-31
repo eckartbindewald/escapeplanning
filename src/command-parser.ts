@@ -22,7 +22,10 @@ export class CommandParser {
         return;
       }
       
+      // Get connected locations
       const locations = this.engine.getConnectedLocations();
+      
+      // Try to match by direction or name
       const direction = args.join(' ').toLowerCase();
       const targetLocation = locations.find(loc => 
         loc.name.toLowerCase().includes(direction) || 
@@ -250,18 +253,6 @@ export class CommandParser {
     });
     this.registerAlias('speak', 'talk');
 
-    // Exit dialog command
-    this.registerCommand('exit', async (args) => {
-      if (this.engine.getState().currentDialog) {
-        this.engine.endDialog();
-        return;
-      }
-      this.engine.addToLog("You're not in a conversation.");
-    });
-    this.registerAlias('bye', 'exit');
-    this.registerAlias('goodbye', 'exit');
-    this.registerAlias('leave', 'exit');
-
     // Inventory command
     this.registerCommand('inventory', async (args) => {
       this.engine.getInventory();
@@ -329,20 +320,14 @@ Available commands:
     const command = tokens[0];
     const args = tokens.slice(1);
 
-    // Check for exit commands in dialog
-    if (this.engine.getState().currentDialog && 
-        ['exit', 'bye', 'goodbye', 'leave'].includes(command)) {
-      this.engine.endDialog();
-      return;
-    }
-
     // If in a dialog, treat input as dialog response
-    if (this.engine.getState().currentDialog) {
+    const currentDialog = this.engine.getState().currentDialog;
+    if (currentDialog) {
       await this.engine.respondToDialog(input);
       return;
     }
 
-    // Handle regular commands
+    // Check for direct command
     if (this.commands.has(command)) {
       const handler = this.commands.get(command)!;
       await handler(args);
@@ -358,6 +343,40 @@ Available commands:
       if (this.commands.has(actualCommand)) {
         const handler = this.commands.get(actualCommand)!;
         await handler(aliasArgs);
+        return;
+      }
+    }
+
+    // Try to parse full sentence commands
+    const fullCommand = tokens.join(' ');
+    
+    if (fullCommand.match(/^(pick|take|get)\s+up\s+/i)) {
+      const item = fullCommand.replace(/^(pick|take|get)\s+up\s+/i, '').replace(/^the\s+/i, '');
+      const handler = this.commands.get('take')!;
+      await handler([item]);
+      return;
+    }
+    
+    if (fullCommand.match(/^(look|examine|inspect)\s+at\s+/i)) {
+      const target = fullCommand.replace(/^(look|examine|inspect)\s+at\s+/i, '').replace(/^the\s+/i, '');
+      const handler = this.commands.get('look')!;
+      await handler([target]);
+      return;
+    }
+    
+    if (fullCommand.match(/^talk\s+to\s+/i)) {
+      const character = fullCommand.replace(/^talk\s+to\s+/i, '').replace(/^the\s+/i, '');
+      const handler = this.commands.get('talk')!;
+      await handler([character]);
+      return;
+    }
+
+    // Check for nearby characters to talk to
+    const charactersHere = this.engine.getCharactersInLocation();
+    for (const character of charactersHere) {
+      if (character.type === 'character' && character.subtype === 'aic') {
+        await this.engine.talkTo(character.id);
+        await this.engine.respondToDialog(input);
         return;
       }
     }

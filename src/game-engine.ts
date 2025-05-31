@@ -615,16 +615,6 @@ export class GameEngine {
     return false;
   }
 
-  public endDialog(): void {
-    if (this.state.currentDialog) {
-      const character = this.getNodeById(this.state.currentDialog.npc_id);
-      if (character) {
-        this.addToLog(`You end your conversation with ${character.name}.`);
-      }
-      this.state.currentDialog = null;
-    }
-  }
-
   public getInventory(): string {
     if (this.gameEnded) {
       this.addToLog("The game has ended. Thanks for playing!");
