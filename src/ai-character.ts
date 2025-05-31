@@ -16,13 +16,29 @@ export class AICharacter {
   async generateResponse(input: string): Promise<string> {
     const inputLower = input.toLowerCase();
     
-    // Questions about Luna herself
+    // Personal questions
+    if (inputLower.includes('birthday')) {
+      return "Time flows differently for beings like me. I mark my existence not by years, but by the cycles of knowledge gained and shared.";
+    }
+
+    if (inputLower.includes('age') || inputLower.includes('old')) {
+      return "Age is but a number, and numbers hold little meaning for one who exists between moments. What matters is the wisdom I can share.";
+    }
+
     if (inputLower.includes('what') && inputLower.includes('wearing')) {
-      return "I wear robes of midnight blue, adorned with silver symbols that shift and change as you watch them. But my appearance is merely a reflection of deeper truths.";
+      return "I wear robes of midnight blue, adorned with silver symbols that shift and change as you watch them. Each pattern tells a story of what was and what may be.";
     }
 
     if (inputLower.includes('what') && (inputLower.includes('do you do') || inputLower.includes('doing here'))) {
       return "I observe the threads of fate and guide those who seek understanding. The forest's edge is where multiple paths converge, making it an ideal place to watch destinies unfold.";
+    }
+
+    // Location-specific questions
+    if (inputLower.includes('tavern')) {
+      if (inputLower.includes('nice')) {
+        return "The tavern holds both warmth and secrets. Grim keeps it well, though his gruff exterior hides a keeper of ancient knowledge. The real mysteries lie beneath its floorboards.";
+      }
+      return "The tavern is more than it appears. Its cellar holds the medallion you seek, but the path there requires both key and courage.";
     }
 
     // Medallion-specific responses
@@ -45,6 +61,11 @@ export class AICharacter {
       return "The key you seek lies here at the forest's edge. It will unlock the cellar door in the tavern, where greater treasures await.";
     }
 
+    // General knowledge questions
+    if (inputLower.includes('what') && inputLower.includes('know')) {
+      return "I know of the medallion's power, the forest's secrets, and the tavern's hidden depths. I know of your quest and the path you must take. What specific knowledge do you seek?";
+    }
+
     // Greetings
     if (inputLower.includes('hello') || inputLower.includes('hi ') || inputLower === 'hi') {
       const greetings = [
@@ -57,16 +78,24 @@ export class AICharacter {
 
     // How are you
     if (inputLower.includes('how are you')) {
-      return "I exist in harmony with the forces that guide us all. But you didn't come here to inquire about my well-being - you seek the medallion, do you not?";
+      const responses = [
+        "I exist in harmony with the forces that guide us all. But you didn't come here to inquire about my well-being - you seek the medallion, do you not?",
+        "My state of being is as constant as the stars, yet as changing as the moon. But let us speak of your journey instead.",
+        "I am as I should be, watching the threads of fate weave their patterns. What guidance do you seek today?"
+      ];
+      return this.getRandomResponse(responses);
     }
 
-    // Default responses - now more helpful while maintaining mystery
+    // Default responses - more varied and contextual
     const defaultResponses = [
       "Ask me about the medallion, the forest, or the key - I may have insights that will aid your quest.",
       "Your path leads to the tavern's cellar, but first you must find what was lost in these woods.",
       "The key near the forest will unlock the way to the medallion below the tavern. What else would you know?",
       "Seek first the key at the forest's edge, then the cellar beneath the tavern. The medallion awaits.",
-      "The answers you seek lie between the forest's edge and the tavern's depths. What would you know of either?"
+      "The answers you seek lie between the forest's edge and the tavern's depths. What would you know of either?",
+      "Sometimes the simplest questions reveal the deepest truths. What would you like to know?",
+      "The forest whispers secrets to those who listen. The tavern holds mysteries for those who search.",
+      "Your quest intertwines with ancient powers. What guidance do you seek?"
     ];
     
     return this.getRandomResponse(defaultResponses);
