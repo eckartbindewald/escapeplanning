@@ -2,10 +2,26 @@
 <html>
 <head>
   <title>LLM Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    #output {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      white-space: pre-wrap;
+    }
+    .error { color: red; }
+    .success { color: green; }
+  </style>
 </head>
 <body>
   <h1>Testing LLM</h1>
-  <pre id="output"></pre>
+  <div id="output"></div>
 
   <script type="module">
     import { pipeline, env } from '@xenova/transformers';
@@ -16,8 +32,11 @@
 
     const output = document.getElementById('output');
 
-    function log(message) {
-      output.textContent += message + '\n';
+    function log(message, type = '') {
+      const line = document.createElement('div');
+      line.textContent = message;
+      if (type) line.className = type;
+      output.appendChild(line);
       console.log(message);
     }
 
@@ -35,13 +54,14 @@
           do_sample: true
         });
         
-        log('\nGenerated Response:');
+        log('\nGenerated Response:', 'success');
         log(result[0].generated_text);
-        log('\nModel test completed successfully!');
+        log('\nModel test completed successfully!', 'success');
         
       } catch (error) {
-        log('\nError testing LLM:');
-        log(error.toString());
+        log('\nError testing LLM:', 'error');
+        log(error.toString(), 'error');
+        log('\nMake sure you are using a browser that supports WebAssembly.', 'error');
       }
     }
 
