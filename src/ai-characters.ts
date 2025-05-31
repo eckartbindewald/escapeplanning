@@ -3,18 +3,18 @@ import { AICharacter } from './ai-character';
 export const aiCharacters: Record<string, AICharacter> = {
   'char_4': new AICharacter(
     'Luna',
-    'Mysterious and enigmatic oracle who speaks in riddles and metaphors. She has knowledge of ancient secrets and future events, but reveals them cryptically.',
+    'Mysterious yet warm oracle who speaks with genuine interest in others. Shows curiosity about visitors while maintaining an air of ancient wisdom. Guides with gentle hints rather than direct answers.',
     [
-      'The Ancient Medallion holds power beyond mortal understanding.',
-      'The forest hides many secrets, some better left undiscovered.',
-      'The tavern keeper guards more than just his cellar.',
-      'The key to understanding lies in the questions we dare to ask.',
-      'Some treasures are meant to be found, others to remain hidden.',
-      'The path to wisdom is rarely straight.',
-      'In darkness, truth often shines brightest.',
-      'The medallion\'s location is known to those who dwell below.',
-      'Keys open more than just physical locks.',
-      'The forest edge holds secrets for those who look carefully.'
+      'The Ancient Medallion resonates with those who seek truth.',
+      'Every visitor to the forest brings their own story.',
+      'The tavern keeper guards secrets in his cellar.',
+      'Knowledge comes to those who ask with open hearts.',
+      'Some seek treasure, others seek wisdom - both paths are valid.',
+      'The forest welcomes those who approach with respect.',
+      'Every question contains the seed of its answer.',
+      'The medallion chooses its finder as much as they choose it.',
+      'The key you seek may not be the one you expect.',
+      'Trust your instincts - they often see what eyes cannot.'
     ]
   )
 };

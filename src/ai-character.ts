@@ -5,6 +5,7 @@ export class AICharacter {
   private maxMemory: number = 10;
   private lastResponse: string = '';
   private personalityTraits: string[];
+  private playerInterests: Set<string> = new Set();
 
   constructor(
     private name: string,
@@ -18,75 +19,91 @@ export class AICharacter {
   async generateResponse(input: string): Promise<string> {
     const inputLower = input.toLowerCase();
     
-    // Personal questions
+    // Track player interests from their input
+    this.updatePlayerInterests(inputLower);
+    
+    // Personal questions - show more personality and interest in the player
     if (inputLower.includes('birthday') || inputLower.includes('age') || inputLower.includes('old')) {
       return this.getRandomResponse([
-        "Time flows differently for me. What you call years, I see as mere moments in the great tapestry.",
-        "I was here before the stones of the tavern were laid, and will remain long after they crumble.",
-        "Age is but a number, and numbers hold different meanings in different realms."
+        "Ah, curious about me? *smiles warmly* Time flows differently in my experience. Tell me, how do you measure your own journey through time?",
+        "An interesting question! *eyes twinkling* I've seen many seasons change, but I'm more curious about your story. What brings someone like you to our village?",
+        "Time is such a fascinating concept, isn't it? *leans forward* I find your curiosity refreshing. What made you ask about my age?"
       ]);
     }
 
     if (inputLower.includes('wearing') || inputLower.includes('clothes') || inputLower.includes('look like')) {
       return this.getRandomResponse([
-        "My appearance shifts like shadows in moonlight. What you see may not be what others perceive.",
-        "I wear the mysteries of the forest and the wisdom of ages. Does form matter more than essence?",
-        "The mists of dawn and the shadows of twilight clothe me. What do your eyes tell you?"
+        "*adjusts flowing robes thoughtfully* My appearance tends to reflect the observer's expectations. What do you see when you look at me?",
+        "Your attention to detail is interesting! *smiles* These robes have stories woven into their fabric. Do you have a favorite piece of clothing with a story?",
+        "*gestures to shimmering garments* The mists of dawn and twilight dress me. But I'm more interested in your story - what brought you to our forest's edge?"
       ]);
     }
 
     if (inputLower.includes('live') || inputLower.includes('home') || inputLower.includes('from')) {
       return this.getRandomResponse([
-        "I dwell in the spaces between what is and what might be. The forest edge is but one of my many haunts.",
-        "My home is wherever the veils between worlds grow thin. This place called to me.",
-        "I walk many paths through many realms. This forest edge is where they currently converge."
+        "*gestures to the surroundings* I walk between worlds, but I've grown quite fond of this place. Where do you call home?",
+        "Home is wherever wisdom seeks expression. *smiles warmly* But enough about me - what lands have you traveled to reach our village?",
+        "*eyes sparkling with interest* I dwell where questions meet answers. Tell me about your homeland - I love hearing travelers' tales."
       ]);
     }
 
-    // Casual conversation
+    // Casual conversation - show genuine interest
     if (inputLower.includes('hello') || inputLower.includes('hi ') || inputLower === 'hi') {
       return this.getRandomResponse([
-        "Greetings, seeker. The winds whispered of your coming.",
-        "Well met. I sense you carry questions beneath your greetings.",
-        "Your path crosses mine at an interesting moment. What brings you to this threshold?"
+        "*smiles warmly* Welcome, seeker! There's something about you that catches my attention. What draws you to this place?",
+        "Ah, a new face! *eyes twinkling with interest* The winds whispered of your coming. Tell me, what adventures bring you here?",
+        "*looking up from a mysterious tome* Well met! I've been hoping for some interesting conversation today. What's on your mind?"
       ]);
     }
 
     if (inputLower.includes('how are you')) {
       return this.getRandomResponse([
-        "I exist in harmony with the forces that guide us all. And you?",
-        "The threads of fate weave smoothly today. How do you fare on your journey?",
-        "My state of being shifts with the cosmic tides. What of your own journey?"
+        "*pleased by your courtesy* I'm well, thank you for asking! The forest's energy is particularly vibrant today. How are you finding our little village?",
+        "*smiling genuinely* Kind of you to ask! I'm enjoying this chance to chat. How has your journey been so far?",
+        "What a thoughtful question! *warm smile* I'm quite well. But I'm more interested in how you're faring - adventuring can be tiring work."
       ]);
     }
 
-    // Off-topic responses
-    if (inputLower.includes('vape') || inputLower.includes('smoking')) {
+    // Off-topic responses - redirect with interest
+    if (this.isOffTopic(inputLower)) {
       return this.getRandomResponse([
-        "Mortal pleasures are fleeting. The mysteries I guard offer deeper satisfaction.",
-        "Such earthly concerns pale beside the ancient powers that stir beneath our feet.",
-        "Your path leads elsewhere. The medallion's power calls - will you answer?"
+        "*listening intently* An interesting perspective! Though perhaps we should discuss the medallion's mystery - I sense it's relevant to your journey.",
+        "*thoughtfully* While that's intriguing, I notice you haven't asked about the ancient power beneath the tavern. Shall we explore that mystery?",
+        "*eyes twinkling with knowing* Your mind wanders interesting paths! But tell me - have you heard about the secrets hidden in the tavern's cellar?"
       ]);
     }
 
     // Quest-related but conversational
     if (inputLower.includes('medallion') || inputLower.includes('artifact')) {
       return this.getRandomResponse([
-        "The medallion's power resonates through time itself. I feel its pulse even now, beneath the tavern's stones.",
-        "Many seek the medallion, but few understand its true nature. What draws you to its mystery?",
-        "The medallion is both less and more than what you imagine. Its true power lies in what it reveals."
+        "*eyes lighting up* Ah, you sense it too! The medallion's power calls to certain souls. What do you feel when you think about it?",
+        "*leaning forward with interest* The medallion has drawn many seekers, but few ask the right questions. What would you ask of it?",
+        "*studying you carefully* You have the look of someone who might understand the medallion's true purpose. What do you know of ancient powers?"
       ]);
     }
 
-    // Default responses with more variety
+    // Default responses with personality
     return this.getRandomResponse([
-      "The questions you ask reveal as much as the answers you seek. What truth do you really hunt for?",
-      "Sometimes the path forward requires us to look in unexpected directions. What do your instincts tell you?",
-      "I sense you seek more than just answers. What deeper mysteries call to you?",
-      "Your words carry echoes of deeper questions. Shall we explore them together?",
-      "Even casual conversation can hide profound truths. What lies beneath your query?",
-      "The patterns shift with each word we exchange. What patterns do you see forming?"
+      "*tilting head thoughtfully* Your questions intrigue me. What deeper mysteries are you really seeking?",
+      "*smiling mysteriously* Sometimes the best answers come from unexpected directions. What does your heart tell you?",
+      "*eyes showing genuine interest* There's more to your question than meets the eye. Shall we explore it together?",
+      "*leaning forward attentively* Your words carry echoes of deeper meanings. What brought this question to mind?",
+      "*watching you with friendly curiosity* Even simple questions can hide profound truths. What made you think to ask that?"
     ]);
+  }
+
+  private isOffTopic(input: string): boolean {
+    const offtopicKeywords = ['vape', 'smoking', 'pizza', 'movie', 'internet', 'phone', 'computer'];
+    return offtopicKeywords.some(keyword => input.includes(keyword));
+  }
+
+  private updatePlayerInterests(input: string) {
+    const interestKeywords = ['magic', 'forest', 'mystery', 'power', 'history', 'adventure', 'quest'];
+    interestKeywords.forEach(keyword => {
+      if (input.includes(keyword)) {
+        this.playerInterests.add(keyword);
+      }
+    });
   }
 
   private getRandomResponse(responses: string[]): string {
