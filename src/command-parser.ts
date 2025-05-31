@@ -22,10 +22,7 @@ export class CommandParser {
         return;
       }
       
-      // Get connected locations
       const locations = this.engine.getConnectedLocations();
-      
-      // Try to match by direction or name
       const direction = args.join(' ').toLowerCase();
       const targetLocation = locations.find(loc => 
         loc.name.toLowerCase().includes(direction) || 
@@ -38,6 +35,7 @@ export class CommandParser {
         this.engine.addToLog(`You can't go to ${direction} from here.`);
       }
     });
+
     this.registerAlias('move', 'go');
     this.registerAlias('walk', 'go');
     this.registerAlias('north', 'go north');
