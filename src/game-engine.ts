@@ -47,8 +47,11 @@ export class GameEngine {
     
     this.state.currentLocation = startLocation;
     this.addToLog(`You find yourself in ${this.getNodeById(startLocation)?.name || 'an unknown location'}.`);
+    
+    // Start the medallion quest automatically
+    this.startQuest('quest_4');
   }
-  
+
   public getState(): GameState {
     return { ...this.state };
   }
@@ -108,19 +111,16 @@ export class GameEngine {
   }
 
   public getCharactersInLocation(): Node[] {
-    // Get characters with explicit location status
     const charactersWithStatus = this.characterStatus
       .filter(status => status.attribute === 'location' && status.value === this.state.currentLocation)
       .map(status => this.getNodeById(status.character_id))
       .filter((node): node is Node => node !== undefined && node.type === 'character');
     
-    // Get characters without location status (static NPCs)
     const staticCharacters = this.nodes.filter(node => 
       node.type === 'character' && 
       !this.characterStatus.some(status => status.character_id === node.id)
     );
     
-    // Combine and deduplicate characters
     const allCharacters = [...charactersWithStatus, ...staticCharacters];
     const uniqueCharacters = allCharacters.filter((char, index) => 
       allCharacters.findIndex(c => c.id === char.id) === index
@@ -311,6 +311,32 @@ export class GameEngine {
         } else {
           this.addToLog(`The ${item.name} doesn't fit the ${target.name}.`);
         }
+      }
+    } else if (item.subtype === 'artifact' && targetId) {
+      const target = this.getNodeById(targetId);
+      if (!target) {
+        this.addToLog("You don't see that here.");
+        return false;
+      }
+
+      if (target.type === 'character' && target.id === 'char_2' && item.id === 'item_4') {
+        this.addToLog(`You give the ${item.name} to ${target.name}.`);
+        this.addToLog(`${target.name} examines the medallion with great interest.`);
+        this.addToLog('"Incredible! You actually found it! As promised, here\'s your reward."');
+        
+        // Remove medallion from inventory
+        this.state.inventory = this.state.inventory.filter(id => id !== itemId);
+        
+        // Complete the quest
+        this.completeQuest('quest_4');
+        
+        // Show victory message
+        this.addToLog('\n=== Congratulations! ===');
+        this.addToLog('You have completed the Ancient Medallion quest!');
+        this.addToLog('You receive: 100 Gold and 200 XP');
+        this.addToLog('Thank you for playing!\n');
+        
+        return true;
       }
     } else if (item.subtype === 'weapon') {
       if (!targetId) {
