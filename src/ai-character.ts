@@ -5,7 +5,7 @@ export class AICharacter {
   private maxMemory: number = 10;
   private lastResponse: string = '';
   private personalityTraits: string[];
-  private playerInterests: Set<string> = new Set();
+  private conversationTopics: Set<string> = new Set();
   private emotiveActions = [
     '*smiles warmly*',
     '*gazes thoughtfully at the forest*',
@@ -25,32 +25,78 @@ export class AICharacter {
   }
 
   async generateResponse(input: string): Promise<string> {
-    const inputLower = input.toLowerCase();
-    
-    if (inputLower === 'no' || inputLower === 'nothing') {
+    // Track conversation topics
+    const topics = this.extractTopics(input);
+    topics.forEach(t => this.conversationTopics.add(t));
+
+    // Handle different types of inputs
+    if (input.toLowerCase().includes('stupid') || input.toLowerCase().includes('pointless')) {
       return this.getRandomResponse([
-        "Ah, sometimes silence speaks volumes. *watches a leaf dance in the wind* What thoughts drift behind your eyes?",
-        "*gently* Even 'nothing' can mean something. Tell me, what brings you to our forest today?",
-        "*settling comfortably* Sometimes the best conversations start from nothing at all. What drew you to this place?"
+        "*tilts head curiously* Your frustration speaks of deeper questions. What answers do you truly seek?",
+        "*gently* Sometimes the simplest questions hide the most complex truths. What troubles you?",
+        "*thoughtfully* Every word carries weight, even those of doubt. What would make this conversation more meaningful for you?"
       ]);
     }
 
-    if (inputLower.includes('bored')) {
+    if (input.length < 5) {
       return this.getRandomResponse([
-        "*laughs softly* Life is full of wonders if you know where to look. What usually catches your interest?",
-        "*eyes twinkling* Bored? Here in this ancient forest? Tell me what kind of adventures you seek.",
-        "*gesturing to the surroundings* Each moment holds its own magic. What kind of magic calls to you?"
+        "*settling on a nearby stone* Sometimes few words carry great meaning. What thoughts lie behind them?",
+        "*watching the leaves dance* Brief words often hold deep waters. Care to explore them further?",
+        "*smiling gently* Your brevity intrigues me. What more would you share if time were endless?"
       ]);
     }
 
-    // More natural, conversational responses
-    return this.getRandomResponse([
-      "*watching a bird soar overhead* Every visitor brings their own story. What's yours, I wonder?",
-      "*picking up a fallen leaf* The forest speaks in many voices. Which ones call to you?",
-      "*smiling warmly* Sometimes the best answers come from unexpected questions. What do you seek?",
-      "*tracing patterns in the air* Your presence here is no accident. What drew you to this place?",
-      "*humming thoughtfully* Each question leads to another path. Which shall we explore?"
-    ]);
+    // Generate a contextual response based on the input
+    const responses = [
+      `*${this.getRandomEmotiveAction()}* ${this.generateContextualResponse(input)}`,
+      `*${this.getRandomEmotiveAction()}* ${this.generatePersonalResponse(input)}`,
+      `*${this.getRandomEmotiveAction()}* ${this.generateNaturalResponse(input)}`
+    ];
+
+    return this.getRandomResponse(responses);
+  }
+
+  private extractTopics(input: string): string[] {
+    return input.toLowerCase()
+      .split(/[\s,.!?]+/)
+      .filter(word => word.length > 3);
+  }
+
+  private getRandomEmotiveAction(): string {
+    return this.emotiveActions[Math.floor(Math.random() * this.emotiveActions.length)];
+  }
+
+  private generateContextualResponse(input: string): string {
+    const responses = [
+      "Your words remind me of ancient whispers in these woods. What echoes do you hear?",
+      "There's wisdom in your perspective. How did you come to see things this way?",
+      "The forest seems to respond to your presence. What draws you to these shadows?",
+      "Your journey here must have many stories. Which would you share?",
+      "Sometimes the path chooses us as much as we choose it. What brought you to this moment?"
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  private generatePersonalResponse(input: string): string {
+    const responses = [
+      "Each visitor brings their own light to these woods. What light do you carry?",
+      "Your questions stir ancient memories. What answers do you seek?",
+      "The trees whisper differently in your presence. What secrets do they share with you?",
+      "Your path through these woods is unique. What guides your steps?",
+      "There's more to your words than meets the ear. What lies beneath them?"
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  private generateNaturalResponse(input: string): string {
+    const responses = [
+      "The wind carries many stories. Which one speaks to you?",
+      "Every leaf falls with purpose. What purpose brings you here?",
+      "The forest holds many secrets. Which ones call to you?",
+      "Time flows differently among these trees. How does it feel to you?",
+      "Nature speaks in riddles sometimes. What riddles do you ponder?"
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
   }
 
   private getRandomResponse(responses: string[]): string {
