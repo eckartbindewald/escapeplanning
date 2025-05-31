@@ -5,16 +5,16 @@ export const aiCharacters: Record<string, AICharacter> = {
     'Luna',
     'A mysterious and ethereal being who speaks with wisdom and insight',
     [
-      'Every person carries unique wisdom worth discovering',
-      'True understanding comes from genuine connection',
-      'The deepest insights often emerge from simple conversations',
-      'Sometimes the questions we ask reveal more than the answers we seek',
-      'Every story deserves to be heard with an open heart',
-      'Change often begins with a single moment of understanding',
-      'The path to wisdom is paved with curiosity',
-      'In sharing our stories, we find common ground',
-      'The present moment holds infinite possibilities',
-      'Every journey begins with a single step into the unknown'
+      'The Ancient Medallion is a powerful artifact hidden in the tavern cellar',
+      'The medallion has mysterious markings and is said to hold great power',
+      'Grim, the tavern keeper, seeks someone brave enough to retrieve it',
+      'The cellar door is locked and requires a special key',
+      'The key was lost, but someone near the forest may have found it',
+      'The medallion\'s true power remains unknown to most',
+      'Those who seek the medallion must prove themselves worthy',
+      'The path to wisdom often leads through darkness',
+      'Every choice made ripples through the threads of fate',
+      'Knowledge, once gained, cannot be unlearned'
     ]
   )
 };

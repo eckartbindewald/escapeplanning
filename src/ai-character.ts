@@ -17,7 +17,7 @@ class LocalLLM implements LLMInterface {
   private modelName: string;
   private initialized: boolean = false;
   
-  constructor(modelName: string = 'Xenova/distilgpt2') {
+  constructor(modelName: string = 'Xenova/tiny-gpt2') {
     this.modelName = modelName;
   }
   
@@ -28,10 +28,29 @@ class LocalLLM implements LLMInterface {
     }
   }
   
-  async generateText(prompt: string, maxTokens: number = 50): Promise<string> {
+  async generateText(prompt: string, maxTokens: number = 30): Promise<string> {
     await this.initialize();
     
     try {
+      // Check for specific questions about known topics
+      const lowerPrompt = prompt.toLowerCase();
+      
+      // Medallion-related responses
+      if (lowerPrompt.includes('medallion')) {
+        return "The Ancient Medallion holds great power, seeker. Hidden in the tavern's depths, it awaits one worthy to claim it. But beware - the path to it is not without its trials.";
+      }
+      
+      // Key-related responses
+      if (lowerPrompt.includes('key')) {
+        return "Ah, you seek the key? Listen well - near the forest's edge, something glints in shadow. Perhaps fate has placed it there for one such as you.";
+      }
+      
+      // Tavern-related responses
+      if (lowerPrompt.includes('tavern') || lowerPrompt.includes('cellar')) {
+        return "The tavern holds secrets in its depths, traveler. Its cellar guards mysteries that few have glimpsed. But the way is sealed... for now.";
+      }
+      
+      // Generate response for other topics
       const result = await this.generator(prompt, {
         max_new_tokens: maxTokens,
         temperature: 0.7,
@@ -39,25 +58,22 @@ class LocalLLM implements LLMInterface {
         no_repeat_ngram_size: 2
       });
       
-      // Clean up the response
       let response = result[0].generated_text;
-      
-      // Remove the prompt from the response
       response = response.replace(prompt, '').trim();
       
-      // Take only the first complete sentence if we got multiple
+      // Take only the first complete sentence
       const sentences = response.match(/[^.!?]+[.!?]+/g) || [response];
       response = sentences[0].trim();
       
-      // Ensure the response isn't too short
-      if (response.length < 10) {
-        return "Greetings, traveler. How may I assist you on your journey?";
+      // Fallback if response is too short
+      if (response.length < 20) {
+        return "The answers you seek lie within, but the path reveals itself only to those who ask the right questions.";
       }
       
       return response;
     } catch (error) {
       console.error('LLM generation error:', error);
-      return 'Greetings, traveler. How may I assist you on your journey?';
+      return "The threads of fate are tangled at the moment. Perhaps we should speak of something else.";
     }
   }
 }
@@ -67,7 +83,6 @@ class LocalLLM implements LLMInterface {
  * This handles contextual dialogue generation for NPCs in the game
  */
 export class AICharacter {
-  // Memory and conversation context
   private context: string[] = [];
   private maxMemory: number = 30;
   private lastResponse: string = '';
@@ -76,38 +91,31 @@ export class AICharacter {
   private maxTopics: number = 5;
   private lastTopic: string = '';
   private characterResponses: Record<string, string[]> = {};
-  
-  // Game state integration
   private gameState?: GameState;
   private gameNodes?: Node[];
   private gameQuests?: Quest[];
-  
-  // LLM for text generation
   private llm: LLMInterface;
-  
-  // Sentiment analysis for emotion detection
   private sentiment = new Sentiment();
-  private emotionalState: number = 0; // Range: -1 to 1
+  private emotionalState: number = 0;
   
-  // Emotive actions for character expression
   private emotiveActions: Record<EmotionState, string[]> = {
     positive: [
-      '*smiles warmly*',
-      '*nods enthusiastically*',
-      '*eyes light up*',
-      '*gestures excitedly*'
+      '*eyes shimmer with ethereal light*',
+      '*gestures gracefully*',
+      '*smiles mysteriously*',
+      '*waves hand, creating sparkles of light*'
     ],
     neutral: [
-      '*tilts head thoughtfully*',
-      '*pauses reflectively*',
-      '*gestures gently*',
-      '*gazes thoughtfully*'
+      '*gazes into the distance*',
+      '*speaks in echoing tones*',
+      '*floats serenely*',
+      '*voice carries ancient wisdom*'
     ],
     empathetic: [
-      '*leans forward with concern*',
-      '*nods understandingly*',
-      '*offers a sympathetic smile*',
-      '*listens attentively*'
+      '*aura pulses with understanding*',
+      '*presence becomes comforting*',
+      '*energy resonates with empathy*',
+      '*ethereal form brightens*'
     ]
   };
   
@@ -115,7 +123,7 @@ export class AICharacter {
     public name: string,
     private personality: string,
     private knowledgeBase: string[] = [],
-    modelName: string = 'Xenova/distilgpt2'
+    modelName: string = 'Xenova/tiny-gpt2'
   ) {
     this.llm = new LocalLLM(modelName);
     this.context = [...knowledgeBase];
@@ -128,9 +136,8 @@ export class AICharacter {
   }
   
   public async generateResponse(input: string): Promise<string> {
-    // Special handling for initial welcome message
     if (input.includes("Welcome the player")) {
-      return "Welcome, seeker of truth. The paths before you hold many mysteries... and I sense you have an important role to play in unfolding them.";
+      return "Welcome, seeker of mysteries. I sense you have a role to play in uncovering the secrets that lie within these walls. The Ancient Medallion calls to those who would dare to seek it.";
     }
     
     const sentimentResult = this.sentiment.analyze(input);
@@ -139,7 +146,7 @@ export class AICharacter {
     this.context.push(`Player: ${input}`);
     
     const prompt = this.createPrompt(input);
-    let response = await this.llm.generateText(prompt, 50);
+    let response = await this.llm.generateText(prompt, 30);
     response = this.addEmotiveAction(response);
     
     this.lastResponse = response;
@@ -154,33 +161,23 @@ export class AICharacter {
   }
   
   private createPrompt(input: string): string {
-    let prompt = `You are ${this.name}, ${this.personality}. Give a short, mystical response.\n\n`;
+    let prompt = `You are ${this.name}, ${this.personality}. Respond with mystical wisdom about: ${input}\n\n`;
     
-    if (this.gameState) {
-      prompt += `Current location: ${this.gameState.currentLocation || 'unknown'}.\n`;
-      
-      if (this.gameState.inventory && this.gameState.inventory.length > 0) {
-        prompt += `Player's items: ${this.gameState.inventory.join(', ')}.\n`;
+    if (this.knowledgeBase.length > 0) {
+      const relevantKnowledge = this.knowledgeBase
+        .filter(k => input.toLowerCase().split(' ').some(word => k.toLowerCase().includes(word)));
+      if (relevantKnowledge.length > 0) {
+        prompt += `Relevant knowledge:\n${relevantKnowledge.join('\n')}\n\n`;
       }
     }
     
-    if (this.knowledgeBase.length > 0) {
-      prompt += `\nYour knowledge:\n${this.knowledgeBase.join('\n')}\n`;
-    }
-    
     if (this.context.length > 0) {
-      prompt += `\nRecent conversation:\n${this.context.slice(-3).join('\n')}\n`;
+      prompt += `Recent conversation:\n${this.context.slice(-2).join('\n')}\n`;
     }
     
-    prompt += `\nPlayer: ${input}\nRespond as ${this.name}:`;
+    prompt += `\nRespond as ${this.name}:`;
     
     return prompt;
-  }
-  
-  private extractTopics(input: string): string[] {
-    return input.toLowerCase()
-      .split(/\W+/)
-      .filter(word => word.length > 2);
   }
   
   private addEmotiveAction(response: string): string {
