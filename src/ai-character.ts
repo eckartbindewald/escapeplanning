@@ -35,13 +35,29 @@ class LocalLLM implements LLMInterface {
       const result = await this.generator(prompt, {
         max_new_tokens: maxTokens,
         temperature: 0.7,
-        do_sample: true
+        do_sample: true,
+        no_repeat_ngram_size: 2
       });
       
-      return result[0].generated_text.replace(prompt, '').trim();
+      // Clean up the response
+      let response = result[0].generated_text;
+      
+      // Remove the prompt from the response
+      response = response.replace(prompt, '').trim();
+      
+      // Take only the first complete sentence if we got multiple
+      const sentences = response.match(/[^.!?]+[.!?]+/g) || [response];
+      response = sentences[0].trim();
+      
+      // Ensure the response isn't too short
+      if (response.length < 10) {
+        return "Greetings, traveler. How may I assist you on your journey?";
+      }
+      
+      return response;
     } catch (error) {
       console.error('LLM generation error:', error);
-      return 'I apologize, but I am having trouble formulating a response.';
+      return 'Greetings, traveler. How may I assist you on your journey?';
     }
   }
 }
@@ -112,6 +128,11 @@ export class AICharacter {
   }
   
   public async generateResponse(input: string): Promise<string> {
+    // Special handling for initial welcome message
+    if (input.includes("Welcome the player")) {
+      return "Welcome, seeker of truth. The paths before you hold many mysteries... and I sense you have an important role to play in unfolding them.";
+    }
+    
     const sentimentResult = this.sentiment.analyze(input);
     this.emotionalState = (this.emotionalState + sentimentResult.comparative) / 2;
     
@@ -133,7 +154,7 @@ export class AICharacter {
   }
   
   private createPrompt(input: string): string {
-    let prompt = `You are ${this.name}, ${this.personality}. Respond in character.\n\n`;
+    let prompt = `You are ${this.name}, ${this.personality}. Give a short, mystical response.\n\n`;
     
     if (this.gameState) {
       prompt += `Current location: ${this.gameState.currentLocation || 'unknown'}.\n`;
