@@ -9,6 +9,7 @@ export class BrowserRunner {
   private inputEl: HTMLInputElement;
   private buttonEl: HTMLButtonElement;
   private navButtonsEl: HTMLElement;
+  private characterButtonsEl: HTMLElement;
 
   constructor(outputId: string, inputId: string, buttonId: string) {
     this.engine = new GameEngine();
@@ -17,6 +18,7 @@ export class BrowserRunner {
     this.inputEl = document.getElementById(inputId)! as HTMLInputElement;
     this.buttonEl = document.getElementById(buttonId)! as HTMLButtonElement;
     this.navButtonsEl = document.getElementById('navigation-buttons')!;
+    this.characterButtonsEl = document.getElementById('character-buttons')!;
     
     this.buttonEl.onclick = () => this.handleInput();
     this.inputEl.addEventListener('keydown', (e) => {
@@ -37,6 +39,7 @@ export class BrowserRunner {
       this.renderLocation();
       this.renderLog();
       this.updateNavigationButtons();
+      this.updateCharacterButtons();
       
       // Enable input once loaded
       this.inputEl.disabled = false;
@@ -57,6 +60,7 @@ export class BrowserRunner {
     this.renderLocation();
     this.renderLog();
     this.updateNavigationButtons();
+    this.updateCharacterButtons();
   }
 
   private print(msg: string): void {
@@ -69,6 +73,7 @@ export class BrowserRunner {
     this.outputEl.innerHTML += `<pre>${desc}</pre>`;
     this.outputEl.scrollTop = this.outputEl.scrollHeight;
     this.updateNavigationButtons();
+    this.updateCharacterButtons();
   }
 
   private updateNavigationButtons(): void {
@@ -84,8 +89,26 @@ export class BrowserRunner {
         this.renderLocation();
         this.renderLog();
         this.updateNavigationButtons();
+        this.updateCharacterButtons();
       };
       this.navButtonsEl.appendChild(btn);
+    });
+  }
+
+  private updateCharacterButtons(): void {
+    this.characterButtonsEl.innerHTML = '';
+    const characters = this.engine.getCharactersInLocation();
+    
+    characters.forEach(character => {
+      const btn = document.createElement('button');
+      btn.className = 'action-button';
+      btn.textContent = `Talk to ${character.name}`;
+      btn.onclick = async () => {
+        await this.parser.parseCommand(`talk to ${character.name}`);
+        this.renderLocation();
+        this.renderLog();
+      };
+      this.characterButtonsEl.appendChild(btn);
     });
   }
 
