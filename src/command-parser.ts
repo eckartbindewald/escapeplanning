@@ -212,10 +212,16 @@ export class CommandParser {
         return;
       }
       
-      const characterName = args.join(' ').toLowerCase();
+      // Remove 'to' if present in the command
+      if (args[0].toLowerCase() === 'to') {
+        args.shift();
+      }
+      
+      const characterName = args.join(' ');
       const charactersHere = this.engine.getCharactersInLocation();
       const character = charactersHere.find(char => 
-        char.name.toLowerCase().includes(characterName) || char.id.toLowerCase() === characterName
+        char.name.toLowerCase() === characterName.toLowerCase() ||
+        char.id.toLowerCase() === characterName.toLowerCase()
       );
       
       if (character) {
@@ -325,19 +331,6 @@ Available commands:
       const character = fullCommand.replace(/^talk\s+to\s+/i, '').replace(/^the\s+/i, '');
       const handler = this.commands.get('talk')!;
       await handler([character]);
-      return;
-    }
-
-    // Check for nearby characters to talk to
-    const charactersHere = this.engine.getCharactersInLocation();
-    const aiCharacter = charactersHere.find(char => 
-      char.type === 'character' && 
-      char.subtype === 'aic' && 
-      input.toLowerCase().includes(char.name.toLowerCase())
-    );
-
-    if (aiCharacter) {
-      await this.engine.talkTo(aiCharacter.id);
       return;
     }
 
