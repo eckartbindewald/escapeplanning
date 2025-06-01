@@ -40,65 +40,52 @@ class LocalLLM implements LLMInterface {
       
       let response = result[0].generated_text.trim();
       
-      // Ensure the response isn't too short
+      // Clean up response
+      response = response.replace(/^("|'|`)/g, '')
+                        .replace(/("|'|`)$/g, '')
+                        .replace(/^\w+:\s*/g, '')
+                        .trim();
+      
+      // Fallback for very short responses
       if (response.length < 10) {
-        return "I sense there is more to discuss. What questions do you have?";
+        return "The threads of fate are intricate. What else would you like to know?";
       }
       
       return response;
     } catch (error) {
       console.error('LLM generation error:', error);
-      return 'I apologize, but my thoughts are clouded at the moment. Perhaps we could speak again shortly?';
+      return 'The ethereal energies are unclear at the moment. Perhaps we could speak again shortly?';
     }
   }
 }
 
-/**
- * AICharacter class that uses a local LLM to generate responses
- * This handles contextual dialogue generation for NPCs in the game
- */
 export class AICharacter {
-  // Memory and conversation context
   private context: string[] = [];
-  private maxMemory: number = 30;
+  private maxMemory: number = 5;
   private lastResponse: string = '';
   private conversationCount: number = 0;
-  private recentTopics: string[] = [];
-  private maxTopics: number = 5;
-  private lastTopic: string = '';
-  private characterResponses: Record<string, string[]> = {};
-  
-  // Game state integration
-  private gameState?: GameState;
-  private gameNodes?: Node[];
-  private gameQuests?: Quest[];
-  
-  // LLM for text generation
+  private sentiment = new Sentiment();
+  private emotionalState: number = 0;
   private llm: LLMInterface;
   
-  // Sentiment analysis for emotion detection
-  private sentiment = new Sentiment();
-  private emotionalState: number = 0; // Range: -1 to 1
-  
-  // Emotive actions for character expression
   private emotiveActions: Record<EmotionState, string[]> = {
     positive: [
-      '*smiles warmly*',
-      '*nods enthusiastically*',
-      '*eyes light up*',
-      '*gestures excitedly*'
+      '*eyes shimmer with ethereal light*',
+      '*gestures gracefully*',
+      '*smiles mysteriously*',
+      '*waves hand, creating sparkles of light*'
     ],
     neutral: [
-      '*tilts head thoughtfully*',
-      '*pauses reflectively*',
-      '*gestures gently*',
-      '*gazes thoughtfully*'
+      '*gazes into the distance*',
+      '*floats serenely*',
+      '*voice echoes softly*',
+      '*ethereal robes ripple*'
     ],
     empathetic: [
-      '*leans forward with concern*',
-      '*nods understandingly*',
-      '*offers a sympathetic smile*',
-      '*listens attentively*'
+      '*energy pulses warmly*',
+      '*aura glows with understanding*',
+      '*presence becomes comforting*',
+      '*ethereal light dims gently*'
     ]
   };
   
@@ -113,45 +100,49 @@ export class AICharacter {
   }
   
   public updateGameData(gameState?: GameState, nodes?: Node[], quests?: Quest[]): void {
-    this.gameState = gameState;
-    this.gameNodes = nodes;
-    this.gameQuests = quests;
+    // Store game state for context
+    if (gameState?.currentQuests['quest_4']) {
+      this.context.push("The player is searching for an ancient medallion.");
+    }
   }
   
   public async generateResponse(input: string): Promise<string> {
     // Special handling for initial welcome message
     if (input.toLowerCase().includes("welcome the player")) {
-      return "Welcome, seeker of truth. The paths before you hold many mysteries... and I sense you have an important role to play in unfolding them.";
+      return "Welcome, seeker of mysteries. I sense you have questions about the ancient medallion... and perhaps I can help guide your path.";
     }
     
+    // Update emotional state based on input
     const sentimentResult = this.sentiment.analyze(input);
     this.emotionalState = (this.emotionalState + sentimentResult.comparative) / 2;
     
-    // Add input to context
-    this.context = this.context.slice(-4); // Keep only recent context
+    // Keep recent context
+    this.context = this.context.slice(-this.maxMemory);
     this.context.push(`Player: ${input}`);
     
-    // Create focused prompt based on current conversation
-    const prompt = `As a mysterious oracle named ${this.name}, respond to: "${input}". Context: ${this.context.join(" ")}. Keep the response mystical but clear.`;
+    // Create contextual prompt
+    let prompt = `You are ${this.name}, ${this.personality}. `;
+    prompt += `The player asks: "${input}". `;
+    
+    // Add medallion context if relevant
+    if (input.toLowerCase().includes('medallion')) {
+      prompt += "You know the medallion holds great power and is hidden in the tavern cellar. ";
+      prompt += "Guide the player subtly without revealing too much. ";
+    }
+    
+    prompt += "Respond mystically but clearly, in 1-2 sentences.";
     
     let response = await this.llm.generateText(prompt, 50);
     
-    // Clean up common issues in responses
-    response = response.replace(/^("|'|`)/g, '')
-                      .replace(/("|'|`)$/g, '')
-                      .replace(/^\w+:\s*/g, '')
-                      .trim();
-                      
-    if (!response) {
-      response = "The mysteries of fate are complex. What else would you like to know?";
-    }
-    
+    // Add emotive action
     response = this.addEmotiveAction(response);
     
+    // Update conversation state
     this.lastResponse = response;
     this.context.push(`${this.name}: ${response}`);
     this.conversationCount++;
     
+    // Decay emotional state over time
     if (this.conversationCount % 3 === 0) {
       this.emotionalState *= 0.8;
     }
@@ -159,21 +150,13 @@ export class AICharacter {
     return response;
   }
   
-  private extractTopics(input: string): string[] {
-    return input.toLowerCase()
-      .split(/\W+/)
-      .filter(word => word.length > 2);
-  }
-  
   private addEmotiveAction(response: string): string {
-    let emotionType: EmotionState;
+    let emotionType: EmotionState = 'neutral';
     
     if (this.emotionalState > 0.3) {
       emotionType = 'positive';
     } else if (this.emotionalState < -0.3) {
       emotionType = 'empathetic';
-    } else {
-      emotionType = 'neutral';
     }
     
     const actions = this.emotiveActions[emotionType];
