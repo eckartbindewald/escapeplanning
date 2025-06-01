@@ -6,6 +6,10 @@ import { pipeline, env } from '@xenova/transformers';
 env.useBrowserCache = false;
 env.allowLocalModels = false;
 
+// Singleton LLM instance
+let globalGenerator: any = null;
+let initializationPromise: Promise<void> | null = null;
+
 // LLM interface for local AI models
 interface LLMInterface {
   generateText(prompt: string, maxTokens?: number): Promise<string>;
@@ -13,26 +17,30 @@ interface LLMInterface {
 
 // Local LLM implementation using transformers.js
 class LocalLLM implements LLMInterface {
-  private generator: any;
   private modelName: string;
-  private initialized: boolean = false;
   
   constructor(modelName: string = 'Xenova/LaMini-Flan-T5-783M') {
     this.modelName = modelName;
   }
   
-  private async initialize() {
-    if (!this.initialized) {
-      this.generator = await pipeline('text2text-generation', this.modelName);
-      this.initialized = true;
+  private async ensureInitialized() {
+    if (!initializationPromise) {
+      initializationPromise = (async () => {
+        if (!globalGenerator) {
+          console.log('Initializing LLM...');
+          globalGenerator = await pipeline('text2text-generation', this.modelName);
+          console.log('LLM initialized successfully');
+        }
+      })();
     }
+    await initializationPromise;
   }
   
   async generateText(prompt: string, maxTokens: number = 100): Promise<string> {
-    await this.initialize();
-    
     try {
-      const result = await this.generator(prompt, {
+      await this.ensureInitialized();
+      
+      const result = await globalGenerator(prompt, {
         max_new_tokens: maxTokens,
         temperature: 0.7,
         do_sample: true,
@@ -143,7 +151,7 @@ export class AICharacter {
     };
     
     // Create contextual prompt
-    let prompt = `Respond as Luna to: "${input}"\n\n`;
+    let prompt = `You are Luna, a mysterious ethereal being. Respond to: "${input}"\n\n`;
     
     if (topics.medallion || topics.quest) {
       prompt += `Quest state: ${this.questProgress}\n`;
