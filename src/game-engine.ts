@@ -121,9 +121,15 @@ export class GameEngine {
 
   public getCharactersInLocation(): Node[] {
     const charactersHere = this.characterStatus
-      .filter(status => status.attribute === 'location' && status.value === this.state.currentLocation)
+      .filter(status => 
+        status.attribute === 'location' && 
+        status.value === this.state.currentLocation
+      )
       .map(status => this.getNodeById(status.character_id))
-      .filter((node): node is Node => node !== undefined && node.type === 'character');
+      .filter((node): node is Node => 
+        node !== undefined && 
+        node.type === 'character'
+      );
     
     return charactersHere;
   }
