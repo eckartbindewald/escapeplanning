@@ -8,8 +8,8 @@ export const aiCharacters: Record<string, AICharacter> = {
       // Quest-related knowledge
       'The ancient medallion pulses with power beneath the tavern',
       'The key to finding the medallion lies in understanding the tavern\'s secrets',
-      'Grim knows more about the medallion than he initially reveals',
-      'The forest holds clues to unlocking the tavern\'s mysteries',
+      'The forest edge holds the key to unlocking the cellar',
+      'Grim seeks the medallion for his collection',
       
       // Personal interaction guidelines
       'Show genuine interest in the player\'s journey and well-being',
@@ -24,10 +24,10 @@ export const aiCharacters: Record<string, AICharacter> = {
       'Connections with others can illuminate the darkest paths',
       
       // Specific quest hints
-      'The tavern\'s cellar holds more than just stored goods',
-      'Sometimes what seems lost is merely waiting to be found',
-      'Keys can be found where shadows meet light',
-      'Those who listen carefully may hear whispers of secrets'
+      'The mysterious key can be found at the forest edge',
+      'The tavern\'s cellar holds the ancient medallion',
+      'Grim will reward those who bring him the medallion',
+      'The path begins at the forest\'s edge where shadows meet light'
     ]
   )
 };

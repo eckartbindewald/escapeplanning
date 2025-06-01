@@ -32,6 +32,43 @@ class LocalLLM implements LLMInterface {
     await this.initialize();
     
     try {
+      // Handle specific topics with predefined responses
+      const lowerPrompt = prompt.toLowerCase();
+      
+      // Medallion-related queries
+      if (lowerPrompt.includes('medallion')) {
+        const responses = [
+          "The medallion's power resonates beneath the tavern. Seek first the key that opens the way.",
+          "Ancient whispers speak of a treasure in the tavern's depths. The forest edge may hold the first clue.",
+          "The medallion calls to those who would seek it. Look for the key near where shadows and nature meet.",
+          "I sense the medallion's presence growing stronger. The path begins at the forest's edge."
+        ];
+        return responses[Math.floor(Math.random() * responses.length)];
+      }
+      
+      // Quest guidance
+      if (lowerPrompt.includes('quest') || lowerPrompt.includes('help') || lowerPrompt.includes('hint')) {
+        const responses = [
+          "The key you seek lies where nature meets civilization. Start your search at the forest's edge.",
+          "Sometimes the simplest path forward begins at the edge of the woods.",
+          "Grim's tavern holds secrets in its depths, but first you must find the means to enter.",
+          "The forest edge holds the key to your quest, quite literally if you look carefully."
+        ];
+        return responses[Math.floor(Math.random() * responses.length)];
+      }
+      
+      // Personal questions
+      if (lowerPrompt.includes('how are you') || lowerPrompt.includes('who are you')) {
+        const responses = [
+          "I am well, watching the threads of destiny weave their intricate patterns.",
+          "I exist between what is and what could be, helping guide those who seek truth.",
+          "My essence flows with the currents of time, observing and guiding when needed.",
+          "I am as the wind - ever present, yet impossible to grasp fully."
+        ];
+        return responses[Math.floor(Math.random() * responses.length)];
+      }
+      
+      // General conversation
       const result = await this.generator(prompt, {
         max_new_tokens: maxTokens,
         temperature: 0.7,
@@ -47,40 +84,19 @@ class LocalLLM implements LLMInterface {
                         .replace(/^Luna:?\s*/i, '')
                         .trim();
       
-      // Medallion-specific responses
-      if (prompt.toLowerCase().includes('medallion')) {
-        const medallionResponses = [
-          "The ancient medallion holds secrets that echo through time. Seek it in the depths below.",
-          "I sense the medallion's power calling from beneath the tavern's worn floorboards.",
-          "The path to the medallion lies through darkness and locked doors. Seek the key first.",
-          "What you seek lies hidden in shadow, waiting for one brave enough to claim it."
-        ];
-        return medallionResponses[Math.floor(Math.random() * medallionResponses.length)];
-      }
-      
-      // Quest encouragement responses
-      if (prompt.toLowerCase().includes('quest') || prompt.toLowerCase().includes('encourage')) {
-        const questResponses = [
-          "Your destiny awaits in the depths below. The medallion's power grows stronger.",
-          "Every step you take brings you closer to uncovering ancient truths.",
-          "The medallion's energy pulses through the tavern's foundation. You must find it.",
-          "Trust your instincts and follow the path before you. Great rewards await the brave."
-        ];
-        return questResponses[Math.floor(Math.random() * questResponses.length)];
-      }
-      
-      // General responses for short or unclear LLM outputs
+      // Fallback for short or unclear responses
       if (response.length < 15 || response.includes("snob") || response.includes("snaft")) {
-        const generalResponses = [
-          "The threads of fate weave curious patterns. What guidance do you seek?",
-          "Time flows like water through my fingers. What questions burn in your heart?",
-          "The ethereal winds whisper many secrets. Which would you know?",
-          "I see many paths before you, each with its own destiny."
+        const fallbackResponses = [
+          "The patterns of destiny take many forms. What guidance do you seek?",
+          "There are many paths before you, each with its own purpose.",
+          "Sometimes the questions we ask reveal more than their answers.",
+          "Your journey intrigues me. What draws you forward?"
         ];
-        return generalResponses[Math.floor(Math.random() * generalResponses.length)];
+        return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
       }
       
       return response;
+      
     } catch (error) {
       console.error('LLM generation error:', error);
       return 'The ethereal energies are unclear at the moment. Perhaps we could speak again shortly?';
@@ -152,19 +168,8 @@ export class AICharacter {
     // Create contextual prompt
     let prompt = `You are ${this.name}, ${this.personality}. `;
     prompt += `The player asks: "${input}". `;
-    
-    // Add relevant context based on input
-    if (input.toLowerCase().includes('medallion')) {
-      prompt += "You know the medallion holds great power and is hidden in the tavern cellar. ";
-      prompt += "Guide the player subtly without revealing too much. ";
-    } else if (input.toLowerCase().includes('quest') || input.toLowerCase().includes('encourage')) {
-      prompt += "Encourage the player to continue their quest for the medallion. ";
-      prompt += "Be mysterious but motivating. ";
-    } else if (input.toLowerCase().includes('how are you')) {
-      prompt += "Share your ethereal nature and current state of being. ";
-    }
-    
-    prompt += "Respond mystically but clearly, in 1-2 sentences.";
+    prompt += "Respond with mystical wisdom and genuine interest in helping. ";
+    prompt += "Keep the response clear and focused on the player's question.";
     
     let response = await this.llm.generateText(prompt, 50);
     
