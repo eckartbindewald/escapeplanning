@@ -5,18 +5,17 @@ env.useBrowserCache = false;
 env.allowLocalModels = false;
 
 async function testLLM() {
-  console.log('Testing LLM model Xenova/distilgpt2...');
+  console.log('Testing LLM model Xenova/LaMini-Flan-T5-783M...');
   
   try {
     console.log('Initializing pipeline...');
-    const generator = await pipeline('text-generation', 'Xenova/distilgpt2');
+    const generator = await pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-783M');
     
     console.log('Generating test response...');
     const result = await generator('Tell me a short story about a wise owl', {
-      max_new_tokens: 50,
+      max_new_tokens: 100,
       temperature: 0.7,
-      do_sample: true,
-      no_repeat_ngram_size: 2
+      do_sample: true
     });
     
     console.log('\nGenerated Response:');
