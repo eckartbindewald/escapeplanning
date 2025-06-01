@@ -44,11 +44,40 @@ class LocalLLM implements LLMInterface {
       response = response.replace(/^("|'|`)/g, '')
                         .replace(/("|'|`)$/g, '')
                         .replace(/^\w+:\s*/g, '')
+                        .replace(/^Luna:?\s*/i, '')
                         .trim();
       
-      // Fallback for very short responses
-      if (response.length < 10) {
-        return "The threads of fate are intricate. What else would you like to know?";
+      // Medallion-specific responses
+      if (prompt.toLowerCase().includes('medallion')) {
+        const medallionResponses = [
+          "The ancient medallion holds secrets that echo through time. Seek it in the depths below.",
+          "I sense the medallion's power calling from beneath the tavern's worn floorboards.",
+          "The path to the medallion lies through darkness and locked doors. Seek the key first.",
+          "What you seek lies hidden in shadow, waiting for one brave enough to claim it."
+        ];
+        return medallionResponses[Math.floor(Math.random() * medallionResponses.length)];
+      }
+      
+      // Quest encouragement responses
+      if (prompt.toLowerCase().includes('quest') || prompt.toLowerCase().includes('encourage')) {
+        const questResponses = [
+          "Your destiny awaits in the depths below. The medallion's power grows stronger.",
+          "Every step you take brings you closer to uncovering ancient truths.",
+          "The medallion's energy pulses through the tavern's foundation. You must find it.",
+          "Trust your instincts and follow the path before you. Great rewards await the brave."
+        ];
+        return questResponses[Math.floor(Math.random() * questResponses.length)];
+      }
+      
+      // General responses for short or unclear LLM outputs
+      if (response.length < 15 || response.includes("snob") || response.includes("snaft")) {
+        const generalResponses = [
+          "The threads of fate weave curious patterns. What guidance do you seek?",
+          "Time flows like water through my fingers. What questions burn in your heart?",
+          "The ethereal winds whisper many secrets. Which would you know?",
+          "I see many paths before you, each with its own destiny."
+        ];
+        return generalResponses[Math.floor(Math.random() * generalResponses.length)];
       }
       
       return response;
@@ -124,10 +153,15 @@ export class AICharacter {
     let prompt = `You are ${this.name}, ${this.personality}. `;
     prompt += `The player asks: "${input}". `;
     
-    // Add medallion context if relevant
+    // Add relevant context based on input
     if (input.toLowerCase().includes('medallion')) {
       prompt += "You know the medallion holds great power and is hidden in the tavern cellar. ";
       prompt += "Guide the player subtly without revealing too much. ";
+    } else if (input.toLowerCase().includes('quest') || input.toLowerCase().includes('encourage')) {
+      prompt += "Encourage the player to continue their quest for the medallion. ";
+      prompt += "Be mysterious but motivating. ";
+    } else if (input.toLowerCase().includes('how are you')) {
+      prompt += "Share your ethereal nature and current state of being. ";
     }
     
     prompt += "Respond mystically but clearly, in 1-2 sentences.";
