@@ -7,11 +7,9 @@ import {
   ObjectStatus,
   DialogNode,
   Quest,
-  GameState,
-  NodeType
+  GameState
 } from './types';
 import { loadGameData } from './data-loader';
-import { aiCharacters } from './ai-characters';
 
 export class GameEngine {
   private nodes: Node[] = [];
@@ -48,24 +46,9 @@ export class GameEngine {
     this.quests = data.quests || [];
     
     this.state.currentLocation = startLocation;
-    this.addToLog('Welcome to Escape Planning! Type "help" for commands.');
+    this.addToLog('Welcome to the Text Adventure! Type "help" for commands.');
     this.addToLog(`You find yourself in ${this.getNodeById(startLocation)?.name || 'an unknown location'}.`);
-    
-    // Generate Luna's welcome message
-    const luna = aiCharacters['char_4'];
-    if (luna) {
-      try {
-        const welcomeMessage = await luna.generateResponse("Welcome the player to the game with a mysterious and intriguing message");
-        this.addToLog(`\nA mysterious figure appears before you in a shimmer of ethereal light...`);
-        this.addToLog(`Luna: "${welcomeMessage}"`);
-        this.lookAround(); // Show the initial location description after Luna's welcome
-      } catch (error) {
-        console.error('Failed to generate welcome message:', error);
-        this.lookAround(); // Ensure location is shown even if welcome fails
-      }
-    } else {
-      this.lookAround(); // Show location if Luna isn't available
-    }
+    this.lookAround();
     
     // Start the medallion quest automatically
     this.startQuest('quest_4');
@@ -462,31 +445,6 @@ export class GameEngine {
       return false;
     }
     
-    if (character.subtype === 'aic') {
-      const aiCharacter = aiCharacters[characterId];
-      if (!aiCharacter) {
-        this.addToLog(`${character.name} doesn't seem interested in talking.`);
-        return false;
-      }
-
-      try {
-        const response = await aiCharacter.generateResponse("Hello");
-        this.addToLog(`${character.name}: "${response}"`);
-        this.state.currentDialog = {
-          id: 'ai_dialog',
-          npc_id: characterId,
-          parent_id: null,
-          text: response,
-          responses: []
-        };
-        return true;
-      } catch (error) {
-        console.error('AI character response error:', error);
-        this.addToLog(`${character.name} remains silent.`);
-        return false;
-      }
-    }
-    
     const startingDialog = this.dialogs.find(dialog => 
       dialog.npc_id === characterId && dialog.parent_id === null
     );
@@ -533,42 +491,6 @@ export class GameEngine {
       this.addToLog(`You end the conversation with ${character.name}.`);
       this.state.currentDialog = null;
       return true;
-    }
-
-    // Handle AI character dialog
-    if (character.subtype === 'aic') {
-      const aiCharacter = aiCharacters[character.id];
-      if (!aiCharacter) {
-        this.addToLog("The conversation ends.");
-        this.state.currentDialog = null;
-        return false;
-      }
-
-      try {
-        const response = await aiCharacter.generateResponse(input);
-        this.addToLog(`You: "${input}"`);
-        this.addToLog(`${character.name}: "${response}"`);
-        this.state.currentDialog = {
-          id: 'ai_dialog',
-          npc_id: character.id,
-          parent_id: null,
-          text: response,
-          responses: []
-        };
-        return true;
-      } catch (error) {
-        console.error('AI character response error:', error);
-        this.addToLog(`${character.name} falls silent.`);
-        this.state.currentDialog = null;
-        return false;
-      }
-    }
-
-    // Handle regular NPC dialog
-    if (!this.state.currentDialog.responses) {
-      this.addToLog("The conversation ends.");
-      this.state.currentDialog = null;
-      return false;
     }
 
     // Try to match by number first
