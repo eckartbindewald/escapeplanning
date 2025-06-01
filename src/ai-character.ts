@@ -34,34 +34,38 @@ class LocalLLM implements LLMInterface {
     try {
       const result = await this.generator(prompt, {
         max_new_tokens: maxTokens,
-        temperature: 0.8,
+        temperature: 0.7,
         do_sample: true,
-        top_k: 50,
-        top_p: 0.9
+        top_k: 40,
+        top_p: 0.95,
+        repetition_penalty: 1.2
       });
       
       let response = result[0].generated_text.trim();
       
       // Clean up response
-      response = response.replace(/^("|'|`)/g, '')
-                        .replace(/("|'|`)$/g, '')
-                        .replace(/^\w+:\s*/g, '')
-                        .replace(/^Luna:?\s*/i, '')
-                        .trim();
+      response = response
+        .replace(/^["'`]|["'`]$/g, '')
+        .replace(/^Luna:?\s*/i, '')
+        .replace(/^I am Luna,?\s*/i, '')
+        .replace(/^As Luna,?\s*/i, '')
+        .trim();
       
-      // Ensure minimum response quality
-      if (response.length < 20 || 
-          response.includes("snob") || 
-          response.includes("snaft") ||
-          response.includes("you are Luna")) {
-        throw new Error("Low quality response");
+      // Filter out low-quality responses
+      if (response.length < 10 || 
+          response.includes("you are Luna") ||
+          response.includes("can provide") ||
+          response.includes("I am a") ||
+          response.toLowerCase().includes("snafus") ||
+          response.toLowerCase().includes("subtle hints")) {
+        return "The ancient powers stir, but their meaning remains unclear. Ask again, seeker of truth.";
       }
       
       return response;
       
     } catch (error) {
       console.error('LLM generation error:', error);
-      return 'The threads of fate are momentarily unclear. Perhaps rephrase your question?';
+      return 'The threads of fate are momentarily tangled. Perhaps rephrase your question?';
     }
   }
 }
@@ -74,6 +78,7 @@ export class AICharacter {
   private sentiment = new Sentiment();
   private emotionalState: number = 0;
   private llm: LLMInterface;
+  private questProgress: string = 'start';
   
   private emotiveActions: Record<EmotionState, string[]> = {
     positive: [
@@ -108,14 +113,18 @@ export class AICharacter {
   
   public updateGameData(gameState?: GameState, nodes?: Node[], quests?: Quest[]): void {
     if (gameState?.currentQuests['quest_4']) {
-      this.context.push("The player is searching for the ancient medallion.");
-      this.context.push("The medallion is hidden in the tavern's cellar.");
-      this.context.push("A mysterious key at the forest edge unlocks the way.");
+      const quest = gameState.currentQuests['quest_4'];
+      if (quest.status === 'not_started') {
+        this.questProgress = 'start';
+      } else if (gameState.inventory.includes('item_3')) {
+        this.questProgress = 'has_key';
+      } else if (gameState.inventory.includes('item_4')) {
+        this.questProgress = 'has_medallion';
+      }
     }
   }
   
   public async generateResponse(input: string): Promise<string> {
-    // Update emotional state based on input
     const sentimentResult = this.sentiment.analyze(input);
     this.emotionalState = (this.emotionalState + sentimentResult.comparative) / 2;
     
@@ -123,31 +132,47 @@ export class AICharacter {
     this.context = this.context.slice(-this.maxMemory);
     this.context.push(`Player: ${input}`);
     
-    // Create detailed prompt
-    let prompt = `As Luna, a mysterious and ethereal being, respond to: "${input}"\n\n`;
-    prompt += "Context:\n";
-    prompt += "- You are genuinely interested in helping while maintaining an air of mystery\n";
-    prompt += "- You know about the ancient medallion quest and can provide subtle hints\n";
-    prompt += "- You care about the player's journey and well-being\n";
-    prompt += `- Previous context: ${this.context.slice(-2).join(" ")}\n\n`;
-    prompt += "Requirements:\n";
-    prompt += "- Be mystical yet clear and helpful\n";
-    prompt += "- Show genuine interest in the player\n";
-    prompt += "- Maintain character consistency\n";
-    prompt += "- Keep responses concise but meaningful\n\n";
-    prompt += "Response:";
+    // Analyze input for topics
+    const topics = {
+      medallion: input.toLowerCase().includes('medallion'),
+      quest: input.toLowerCase().includes('quest') || input.toLowerCase().includes('help'),
+      personal: input.toLowerCase().includes('you') || input.toLowerCase().includes('how are'),
+      key: input.toLowerCase().includes('key'),
+      forest: input.toLowerCase().includes('forest'),
+      tavern: input.toLowerCase().includes('tavern')
+    };
+    
+    // Create contextual prompt
+    let prompt = `Respond as Luna to: "${input}"\n\n`;
+    
+    if (topics.medallion || topics.quest) {
+      prompt += `Quest state: ${this.questProgress}\n`;
+      prompt += "Key quest knowledge:\n";
+      prompt += "- The medallion is hidden in the tavern's cellar\n";
+      prompt += "- A key can be found at the forest edge\n";
+      prompt += "- The medallion holds ancient power\n";
+    }
+    
+    if (topics.personal) {
+      prompt += "Personal traits:\n";
+      prompt += "- Mysterious yet warm and helpful\n";
+      prompt += "- Deeply interested in others\n";
+      prompt += "- Speaks in clear but mystical terms\n";
+    }
+    
+    prompt += "\nRequirements:\n";
+    prompt += "- Give clear but mystical guidance\n";
+    prompt += "- Be genuinely interested in the player\n";
+    prompt += "- Keep responses concise and meaningful\n";
+    prompt += "- Never break character\n";
     
     let response = await this.llm.generateText(prompt);
-    
-    // Add emotive action
     response = this.addEmotiveAction(response);
     
-    // Update conversation state
     this.lastResponse = response;
     this.context.push(`${this.name}: ${response}`);
     this.conversationCount++;
     
-    // Decay emotional state over time
     if (this.conversationCount % 3 === 0) {
       this.emotionalState *= 0.8;
     }

@@ -5,23 +5,28 @@ export const aiCharacters: Record<string, AICharacter> = {
     'Luna',
     'a mysterious and ethereal being who speaks with wisdom and insight',
     [
-      // Core knowledge about the medallion quest
-      'The ancient medallion lies hidden in the tavern\'s cellar',
-      'A mysterious key can be found at the forest edge',
-      'The medallion holds great power and significance',
-      'Grim seeks the medallion for his collection',
+      // Quest-specific knowledge
+      'The ancient medallion rests in the tavern\'s depths',
+      'A key lies hidden where the forest meets civilization',
+      'The medallion resonates with ancient power',
+      'Some secrets reveal themselves only to the patient',
       
-      // Wisdom and guidance
-      'Every journey has its purpose',
-      'Knowledge comes to those who seek with patience',
-      'The path reveals itself to the observant',
-      'Sometimes the simplest solution requires the most courage',
+      // Location knowledge
+      'The forest edge holds more than meets the eye',
+      'The tavern\'s cellar guards its secrets well',
+      'Paths that seem simple often lead to profound discoveries',
+      
+      // General wisdom
+      'Truth often hides in plain sight',
+      'The simplest answer may be the deepest wisdom',
+      'Every seeker must walk their own path',
+      'Knowledge comes to those who listen with both mind and heart',
       
       // Character traits
-      'Deeply interested in helping others grow',
-      'Sees patterns in the threads of fate',
-      'Values genuine connection and understanding',
-      'Believes in the power of personal discovery'
+      'Genuinely interested in helping others find their way',
+      'Sees connections in the tapestry of fate',
+      'Values authentic dialogue and understanding',
+      'Believes in guiding rather than telling'
     ]
   )
 };
