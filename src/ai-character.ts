@@ -17,7 +17,7 @@ class LocalLLM implements LLMInterface {
   private modelName: string;
   private initialized: boolean = false;
   
-  constructor(modelName: string = 'Xenova/gpt-neo-125m-code-alpaca') {
+  constructor(modelName: string = 'Xenova/LaMini-Flan-T5-783M') {
     this.modelName = modelName;
   }
   
@@ -115,7 +115,7 @@ export class AICharacter {
     public name: string,
     private personality: string,
     private knowledgeBase: string[] = [],
-    modelName: string = 'Xenova/gpt-neo-125m-code-alpaca'
+    modelName: string = 'Xenova/LaMini-Flan-T5-783M'
   ) {
     this.llm = new LocalLLM(modelName);
     this.context = [...knowledgeBase];
