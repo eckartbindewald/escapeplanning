@@ -42,13 +42,13 @@ class LocalLLM implements LLMInterface {
       
       // Ensure the response isn't too short
       if (response.length < 10) {
-        return "Greetings, traveler. How may I assist you on your journey?";
+        return "I sense there is more to discuss. What questions do you have?";
       }
       
       return response;
     } catch (error) {
       console.error('LLM generation error:', error);
-      return 'Greetings, traveler. How may I assist you on your journey?';
+      return 'I apologize, but my thoughts are clouded at the moment. Perhaps we could speak again shortly?';
     }
   }
 }
@@ -120,21 +120,36 @@ export class AICharacter {
   
   public async generateResponse(input: string): Promise<string> {
     // Special handling for initial welcome message
-    if (input.includes("Welcome the player")) {
+    if (input.toLowerCase().includes("welcome the player")) {
       return "Welcome, seeker of truth. The paths before you hold many mysteries... and I sense you have an important role to play in unfolding them.";
     }
     
     const sentimentResult = this.sentiment.analyze(input);
     this.emotionalState = (this.emotionalState + sentimentResult.comparative) / 2;
     
+    // Add input to context
+    this.context = this.context.slice(-4); // Keep only recent context
     this.context.push(`Player: ${input}`);
     
-    const prompt = this.createPrompt(input);
+    // Create focused prompt based on current conversation
+    const prompt = `As a mysterious oracle named ${this.name}, respond to: "${input}". Context: ${this.context.join(" ")}. Keep the response mystical but clear.`;
+    
     let response = await this.llm.generateText(prompt, 50);
+    
+    // Clean up common issues in responses
+    response = response.replace(/^("|'|`)/g, '')
+                      .replace(/("|'|`)$/g, '')
+                      .replace(/^\w+:\s*/g, '')
+                      .trim();
+                      
+    if (!response) {
+      response = "The mysteries of fate are complex. What else would you like to know?";
+    }
+    
     response = this.addEmotiveAction(response);
     
     this.lastResponse = response;
-    this.updateContext(input, response);
+    this.context.push(`${this.name}: ${response}`);
     this.conversationCount++;
     
     if (this.conversationCount % 3 === 0) {
@@ -142,20 +157,6 @@ export class AICharacter {
     }
     
     return response;
-  }
-  
-  private createPrompt(input: string): string {
-    let prompt = `Generate a mystical response as ${this.name}, ${this.personality}. Player says: ${input}`;
-    
-    if (this.gameState) {
-      prompt += ` Current location: ${this.gameState.currentLocation || 'unknown'}.`;
-      
-      if (this.gameState.inventory && this.gameState.inventory.length > 0) {
-        prompt += ` Player has: ${this.gameState.inventory.join(', ')}.`;
-      }
-    }
-    
-    return prompt;
   }
   
   private extractTopics(input: string): string[] {
@@ -177,15 +178,6 @@ export class AICharacter {
     
     const actions = this.emotiveActions[emotionType];
     return `${actions[Math.floor(Math.random() * actions.length)]} ${response}`;
-  }
-  
-  private updateContext(input: string, response: string): void {
-    this.context.push(`User: ${input}`);
-    this.context.push(`${this.name}: ${response}`);
-    
-    while (this.context.length > this.maxMemory) {
-      this.context.shift();
-    }
   }
 }
 
