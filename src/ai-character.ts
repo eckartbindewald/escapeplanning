@@ -36,28 +36,31 @@ class LocalLLM implements LLMInterface {
         max_new_tokens: maxTokens,
         temperature: 0.7,
         do_sample: true,
-        no_repeat_ngram_size: 2
+        no_repeat_ngram_size: 2,
+        max_length: 100 // Add maximum length constraint
       });
       
       // Clean up the response
-      let response = result[0].generated_text;
+      let response = result[0].generated_text.trim();
       
-      // Remove the prompt from the response
-      response = response.replace(prompt, '').trim();
+      // Remove any instances of the prompt from the response
+      response = response.replace(new RegExp(prompt, 'gi'), '').trim();
       
       // Take only the first complete sentence if we got multiple
-      const sentences = response.match(/[^.!?]+[.!?]+/g) || [response];
-      response = sentences[0].trim();
+      const sentences = response.match(/[^.!?]+[.!?]+/g);
+      if (sentences && sentences.length > 0) {
+        response = sentences[0].trim();
+      }
       
-      // Ensure the response isn't too short
+      // Fallback response if the generated text is too short or empty
       if (response.length < 10) {
-        return "Greetings, traveler. How may I assist you on your journey?";
+        return "I sense your curiosity. What knowledge do you seek?";
       }
       
       return response;
     } catch (error) {
       console.error('LLM generation error:', error);
-      return 'Greetings, traveler. How may I assist you on your journey?';
+      return 'I sense your presence. How may I guide you today?';
     }
   }
 }
@@ -69,13 +72,12 @@ class LocalLLM implements LLMInterface {
 export class AICharacter {
   // Memory and conversation context
   private context: string[] = [];
-  private maxMemory: number = 30;
+  private maxMemory: number = 5; // Reduced from 30 to prevent context overflow
   private lastResponse: string = '';
   private conversationCount: number = 0;
   private recentTopics: string[] = [];
   private maxTopics: number = 5;
   private lastTopic: string = '';
-  private characterResponses: Record<string, string[]> = {};
   
   // Game state integration
   private gameState?: GameState;
@@ -94,20 +96,20 @@ export class AICharacter {
     positive: [
       '*smiles warmly*',
       '*nods enthusiastically*',
-      '*eyes light up*',
-      '*gestures excitedly*'
+      '*eyes shimmer*',
+      '*gestures gracefully*'
     ],
     neutral: [
-      '*tilts head thoughtfully*',
-      '*pauses reflectively*',
-      '*gestures gently*',
-      '*gazes thoughtfully*'
+      '*observes thoughtfully*',
+      '*pauses briefly*',
+      '*gestures calmly*',
+      '*gazes serenely*'
     ],
     empathetic: [
-      '*leans forward with concern*',
-      '*nods understandingly*',
-      '*offers a sympathetic smile*',
-      '*listens attentively*'
+      '*listens intently*',
+      '*nods understanding*',
+      '*offers a gentle smile*',
+      '*focuses attentively*'
     ]
   };
   
@@ -118,7 +120,7 @@ export class AICharacter {
     modelName: string = 'Xenova/LaMini-Flan-T5-783M'
   ) {
     this.llm = new LocalLLM(modelName);
-    this.context = [...knowledgeBase];
+    this.context = [...knowledgeBase.slice(-this.maxMemory)];
   }
   
   public updateGameData(gameState?: GameState, nodes?: Node[], quests?: Quest[]): void {
@@ -133,9 +135,18 @@ export class AICharacter {
       return "Welcome, seeker of truth. The paths before you hold many mysteries... and I sense you have an important role to play in unfolding them.";
     }
     
+    // Prevent processing if input is too long
+    if (input.length > 200) {
+      return "I sense your thoughts, but please speak more concisely.";
+    }
+    
     const sentimentResult = this.sentiment.analyze(input);
     this.emotionalState = (this.emotionalState + sentimentResult.comparative) / 2;
     
+    // Keep context size manageable
+    while (this.context.length >= this.maxMemory) {
+      this.context.shift();
+    }
     this.context.push(`Player: ${input}`);
     
     const prompt = this.createPrompt(input);
@@ -154,33 +165,15 @@ export class AICharacter {
   }
   
   private createPrompt(input: string): string {
-    let prompt = `You are ${this.name}, ${this.personality}. Give a short, mystical response.\n\n`;
-    
-    if (this.gameState) {
-      prompt += `Current location: ${this.gameState.currentLocation || 'unknown'}.\n`;
-      
-      if (this.gameState.inventory && this.gameState.inventory.length > 0) {
-        prompt += `Player's items: ${this.gameState.inventory.join(', ')}.\n`;
-      }
-    }
-    
-    if (this.knowledgeBase.length > 0) {
-      prompt += `\nYour knowledge:\n${this.knowledgeBase.join('\n')}\n`;
-    }
+    let prompt = `You are ${this.name}, ${this.personality}. Respond briefly and mystically.\n\n`;
     
     if (this.context.length > 0) {
-      prompt += `\nRecent conversation:\n${this.context.slice(-3).join('\n')}\n`;
+      prompt += `\nRecent conversation:\n${this.context.slice(-2).join('\n')}\n`;
     }
     
     prompt += `\nPlayer: ${input}\nRespond as ${this.name}:`;
     
     return prompt;
-  }
-  
-  private extractTopics(input: string): string[] {
-    return input.toLowerCase()
-      .split(/\W+/)
-      .filter(word => word.length > 2);
   }
   
   private addEmotiveAction(response: string): string {
@@ -199,12 +192,11 @@ export class AICharacter {
   }
   
   private updateContext(input: string, response: string): void {
-    this.context.push(`User: ${input}`);
-    this.context.push(`${this.name}: ${response}`);
-    
-    while (this.context.length > this.maxMemory) {
-      this.context.shift();
+    // Keep only the most recent exchanges
+    if (this.context.length >= this.maxMemory) {
+      this.context = this.context.slice(-3);
     }
+    this.context.push(`${this.name}: ${response}`);
   }
 }
 
