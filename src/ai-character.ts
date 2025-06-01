@@ -23,7 +23,7 @@ class LocalLLM implements LLMInterface {
   
   private async initialize() {
     if (!this.initialized) {
-      this.generator = await pipeline('text-generation', this.modelName);
+      this.generator = await pipeline('text2text-generation', this.modelName);
       this.initialized = true;
     }
   }
