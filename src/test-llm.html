@@ -62,7 +62,7 @@
     async function testLLM() {
       output.textContent = ''; // Clear initial message
       log('Starting LLM test...', 'info');
-      log('Model: Xenova/LaMini-Flan-T5-783M', 'info');
+      log('Model: Xenova/distilgpt2', 'info');
       
       try {
         log('\nInitializing ONNX runtime...', 'info');
@@ -70,7 +70,7 @@
         log('ONNX runtime initialized successfully', 'success');
 
         log('\nInitializing pipeline...', 'info');
-        const generator = await pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-783M', {
+        const generator = await pipeline('text-generation', 'Xenova/distilgpt2', {
           progress_callback: (progress) => {
             if (progress.status === 'progress') {
               log(`Loading model: ${Math.round(progress.value * 100)}%`, 'info');
@@ -81,9 +81,10 @@
         
         log('\nGenerating test response...', 'info');
         const result = await generator('Tell me a short story about a wise owl', {
-          max_new_tokens: 100,
+          max_new_tokens: 50,
           temperature: 0.7,
-          do_sample: true
+          do_sample: true,
+          no_repeat_ngram_size: 2
         });
         
         log('\nGenerated Response:', 'success');
