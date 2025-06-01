@@ -17,13 +17,13 @@ class LocalLLM implements LLMInterface {
   private modelName: string;
   private initialized: boolean = false;
   
-  constructor(modelName: string = 'Xenova/distilgpt2') {
+  constructor(modelName: string = 'Xenova/FLAN-T5-small') {
     this.modelName = modelName;
   }
   
   private async initialize() {
     if (!this.initialized) {
-      this.generator = await pipeline('text-generation', this.modelName);
+      this.generator = await pipeline('text2text-generation', this.modelName);
       this.initialized = true;
     }
   }
@@ -35,19 +35,10 @@ class LocalLLM implements LLMInterface {
       const result = await this.generator(prompt, {
         max_new_tokens: maxTokens,
         temperature: 0.7,
-        do_sample: true,
-        no_repeat_ngram_size: 2
+        do_sample: true
       });
       
-      // Clean up the response
-      let response = result[0].generated_text;
-      
-      // Remove the prompt from the response
-      response = response.replace(prompt, '').trim();
-      
-      // Take only the first complete sentence if we got multiple
-      const sentences = response.match(/[^.!?]+[.!?]+/g) || [response];
-      response = sentences[0].trim();
+      let response = result[0].generated_text.trim();
       
       // Ensure the response isn't too short
       if (response.length < 10) {
@@ -115,7 +106,7 @@ export class AICharacter {
     public name: string,
     private personality: string,
     private knowledgeBase: string[] = [],
-    modelName: string = 'Xenova/distilgpt2'
+    modelName: string = 'Xenova/FLAN-T5-small'
   ) {
     this.llm = new LocalLLM(modelName);
     this.context = [...knowledgeBase];
@@ -154,25 +145,15 @@ export class AICharacter {
   }
   
   private createPrompt(input: string): string {
-    let prompt = `You are ${this.name}, ${this.personality}. Give a short, mystical response.\n\n`;
+    let prompt = `Generate a mystical response as ${this.name}, ${this.personality}. Player says: ${input}`;
     
     if (this.gameState) {
-      prompt += `Current location: ${this.gameState.currentLocation || 'unknown'}.\n`;
+      prompt += ` Current location: ${this.gameState.currentLocation || 'unknown'}.`;
       
       if (this.gameState.inventory && this.gameState.inventory.length > 0) {
-        prompt += `Player's items: ${this.gameState.inventory.join(', ')}.\n`;
+        prompt += ` Player has: ${this.gameState.inventory.join(', ')}.`;
       }
     }
-    
-    if (this.knowledgeBase.length > 0) {
-      prompt += `\nYour knowledge:\n${this.knowledgeBase.join('\n')}\n`;
-    }
-    
-    if (this.context.length > 0) {
-      prompt += `\nRecent conversation:\n${this.context.slice(-3).join('\n')}\n`;
-    }
-    
-    prompt += `\nPlayer: ${input}\nRespond as ${this.name}:`;
     
     return prompt;
   }
