@@ -17,7 +17,7 @@ class LocalLLM implements LLMInterface {
   private modelName: string;
   private initialized: boolean = false;
   
-  constructor(modelName: string = 'Xenova/FLAN-T5-small') {
+  constructor(modelName: string = 'Xenova/LaMini-Flan-T5-783M') {
     this.modelName = modelName;
   }
   
@@ -28,51 +28,16 @@ class LocalLLM implements LLMInterface {
     }
   }
   
-  async generateText(prompt: string, maxTokens: number = 50): Promise<string> {
+  async generateText(prompt: string, maxTokens: number = 100): Promise<string> {
     await this.initialize();
     
     try {
-      // Handle specific topics with predefined responses
-      const lowerPrompt = prompt.toLowerCase();
-      
-      // Medallion-related queries
-      if (lowerPrompt.includes('medallion')) {
-        const responses = [
-          "The medallion's power resonates beneath the tavern. Seek first the key that opens the way.",
-          "Ancient whispers speak of a treasure in the tavern's depths. The forest edge may hold the first clue.",
-          "The medallion calls to those who would seek it. Look for the key near where shadows and nature meet.",
-          "I sense the medallion's presence growing stronger. The path begins at the forest's edge."
-        ];
-        return responses[Math.floor(Math.random() * responses.length)];
-      }
-      
-      // Quest guidance
-      if (lowerPrompt.includes('quest') || lowerPrompt.includes('help') || lowerPrompt.includes('hint')) {
-        const responses = [
-          "The key you seek lies where nature meets civilization. Start your search at the forest's edge.",
-          "Sometimes the simplest path forward begins at the edge of the woods.",
-          "Grim's tavern holds secrets in its depths, but first you must find the means to enter.",
-          "The forest edge holds the key to your quest, quite literally if you look carefully."
-        ];
-        return responses[Math.floor(Math.random() * responses.length)];
-      }
-      
-      // Personal questions
-      if (lowerPrompt.includes('how are you') || lowerPrompt.includes('who are you')) {
-        const responses = [
-          "I am well, watching the threads of destiny weave their intricate patterns.",
-          "I exist between what is and what could be, helping guide those who seek truth.",
-          "My essence flows with the currents of time, observing and guiding when needed.",
-          "I am as the wind - ever present, yet impossible to grasp fully."
-        ];
-        return responses[Math.floor(Math.random() * responses.length)];
-      }
-      
-      // General conversation
       const result = await this.generator(prompt, {
         max_new_tokens: maxTokens,
-        temperature: 0.7,
-        do_sample: true
+        temperature: 0.8,
+        do_sample: true,
+        top_k: 50,
+        top_p: 0.9
       });
       
       let response = result[0].generated_text.trim();
@@ -84,22 +49,19 @@ class LocalLLM implements LLMInterface {
                         .replace(/^Luna:?\s*/i, '')
                         .trim();
       
-      // Fallback for short or unclear responses
-      if (response.length < 15 || response.includes("snob") || response.includes("snaft")) {
-        const fallbackResponses = [
-          "The patterns of destiny take many forms. What guidance do you seek?",
-          "There are many paths before you, each with its own purpose.",
-          "Sometimes the questions we ask reveal more than their answers.",
-          "Your journey intrigues me. What draws you forward?"
-        ];
-        return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+      // Ensure minimum response quality
+      if (response.length < 20 || 
+          response.includes("snob") || 
+          response.includes("snaft") ||
+          response.includes("you are Luna")) {
+        throw new Error("Low quality response");
       }
       
       return response;
       
     } catch (error) {
       console.error('LLM generation error:', error);
-      return 'The ethereal energies are unclear at the moment. Perhaps we could speak again shortly?';
+      return 'The threads of fate are momentarily unclear. Perhaps rephrase your question?';
     }
   }
 }
@@ -138,25 +100,21 @@ export class AICharacter {
     public name: string,
     private personality: string,
     private knowledgeBase: string[] = [],
-    modelName: string = 'Xenova/FLAN-T5-small'
+    modelName: string = 'Xenova/LaMini-Flan-T5-783M'
   ) {
     this.llm = new LocalLLM(modelName);
     this.context = [...knowledgeBase];
   }
   
   public updateGameData(gameState?: GameState, nodes?: Node[], quests?: Quest[]): void {
-    // Store game state for context
     if (gameState?.currentQuests['quest_4']) {
-      this.context.push("The player is searching for an ancient medallion.");
+      this.context.push("The player is searching for the ancient medallion.");
+      this.context.push("The medallion is hidden in the tavern's cellar.");
+      this.context.push("A mysterious key at the forest edge unlocks the way.");
     }
   }
   
   public async generateResponse(input: string): Promise<string> {
-    // Special handling for initial welcome message
-    if (input.toLowerCase().includes("welcome the player")) {
-      return "Welcome, seeker of mysteries. I sense you have questions about the ancient medallion... and perhaps I can help guide your path.";
-    }
-    
     // Update emotional state based on input
     const sentimentResult = this.sentiment.analyze(input);
     this.emotionalState = (this.emotionalState + sentimentResult.comparative) / 2;
@@ -165,13 +123,21 @@ export class AICharacter {
     this.context = this.context.slice(-this.maxMemory);
     this.context.push(`Player: ${input}`);
     
-    // Create contextual prompt
-    let prompt = `You are ${this.name}, ${this.personality}. `;
-    prompt += `The player asks: "${input}". `;
-    prompt += "Respond with mystical wisdom and genuine interest in helping. ";
-    prompt += "Keep the response clear and focused on the player's question.";
+    // Create detailed prompt
+    let prompt = `As Luna, a mysterious and ethereal being, respond to: "${input}"\n\n`;
+    prompt += "Context:\n";
+    prompt += "- You are genuinely interested in helping while maintaining an air of mystery\n";
+    prompt += "- You know about the ancient medallion quest and can provide subtle hints\n";
+    prompt += "- You care about the player's journey and well-being\n";
+    prompt += `- Previous context: ${this.context.slice(-2).join(" ")}\n\n`;
+    prompt += "Requirements:\n";
+    prompt += "- Be mystical yet clear and helpful\n";
+    prompt += "- Show genuine interest in the player\n";
+    prompt += "- Maintain character consistency\n";
+    prompt += "- Keep responses concise but meaningful\n\n";
+    prompt += "Response:";
     
-    let response = await this.llm.generateText(prompt, 50);
+    let response = await this.llm.generateText(prompt);
     
     // Add emotive action
     response = this.addEmotiveAction(response);
