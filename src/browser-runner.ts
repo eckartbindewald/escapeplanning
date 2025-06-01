@@ -10,6 +10,7 @@ export class BrowserRunner {
   private buttonEl: HTMLButtonElement;
   private navButtonsEl: HTMLElement;
   private characterButtonsEl: HTMLElement;
+  private itemButtonsEl: HTMLElement;
 
   constructor(outputId: string, inputId: string, buttonId: string) {
     this.engine = new GameEngine();
@@ -19,6 +20,7 @@ export class BrowserRunner {
     this.buttonEl = document.getElementById(buttonId)! as HTMLButtonElement;
     this.navButtonsEl = document.getElementById('navigation-buttons')!;
     this.characterButtonsEl = document.getElementById('character-buttons')!;
+    this.itemButtonsEl = document.getElementById('item-buttons')!;
     
     this.buttonEl.onclick = () => this.handleInput();
     this.inputEl.addEventListener('keydown', (e) => {
@@ -40,6 +42,7 @@ export class BrowserRunner {
       this.renderLog();
       this.updateNavigationButtons();
       this.updateCharacterButtons();
+      this.updateItemButtons();
       
       // Enable input once loaded
       this.inputEl.disabled = false;
@@ -61,6 +64,7 @@ export class BrowserRunner {
     this.renderLog();
     this.updateNavigationButtons();
     this.updateCharacterButtons();
+    this.updateItemButtons();
   }
 
   private print(msg: string): void {
@@ -74,6 +78,7 @@ export class BrowserRunner {
     this.outputEl.scrollTop = this.outputEl.scrollHeight;
     this.updateNavigationButtons();
     this.updateCharacterButtons();
+    this.updateItemButtons();
   }
 
   private updateNavigationButtons(): void {
@@ -90,6 +95,7 @@ export class BrowserRunner {
         this.renderLog();
         this.updateNavigationButtons();
         this.updateCharacterButtons();
+        this.updateItemButtons();
       };
       this.navButtonsEl.appendChild(btn);
     });
@@ -109,6 +115,24 @@ export class BrowserRunner {
         this.renderLog();
       };
       this.characterButtonsEl.appendChild(btn);
+    });
+  }
+
+  private updateItemButtons(): void {
+    this.itemButtonsEl.innerHTML = '';
+    const items = this.engine.getItemsInLocation();
+    
+    items.forEach(item => {
+      const btn = document.createElement('button');
+      btn.className = 'action-button';
+      btn.textContent = `Get ${item.name}`;
+      btn.onclick = async () => {
+        await this.parser.parseCommand(`take ${item.name}`);
+        this.renderLocation();
+        this.renderLog();
+        this.updateItemButtons();
+      };
+      this.itemButtonsEl.appendChild(btn);
     });
   }
 
