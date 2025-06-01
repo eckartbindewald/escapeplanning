@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Escape Planning - Text Adventure</title>
+  <title>Text Adventure</title>
   <style>
     body {
       font-family: 'Courier New', monospace;
@@ -57,8 +57,13 @@
     #game-button:hover {
       background-color: #666;
     }
+    .action-buttons {
+      margin: 10px 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
     .action-button {
-      margin: 5px;
       padding: 8px 16px;
       background-color: #444;
       color: #fff;
@@ -85,24 +90,18 @@
     .success-message {
       color: #66ff66;
     }
-    .loading-message {
-      color: #4dabf7;
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0% { opacity: 0.5; }
-      50% { opacity: 1; }
-      100% { opacity: 0.5; }
-    }
   </style>
 </head>
 <body>
-  <h1>Escape Planning: Text-Based RPG</h1>
+  <h1>Text Adventure</h1>
   <div id="game-container">
     <div id="game-output"></div>
+    <div class="action-buttons">
+      <button id="look-button" class="action-button">Look Around</button>
+      <div id="navigation-buttons"></div>
+    </div>
     <input id="game-input" type="text" placeholder="What will you do?" autofocus disabled />
     <button id="game-button" disabled>Enter</button>
-    <button id="look-button" class="action-button">Look Around</button>
   </div>
 
   <script type="module" src="./game.ts"></script>

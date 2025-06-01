@@ -8,6 +8,7 @@ export class BrowserRunner {
   private outputEl: HTMLElement;
   private inputEl: HTMLInputElement;
   private buttonEl: HTMLButtonElement;
+  private navButtonsEl: HTMLElement;
 
   constructor(outputId: string, inputId: string, buttonId: string) {
     this.engine = new GameEngine();
@@ -15,10 +16,13 @@ export class BrowserRunner {
     this.outputEl = document.getElementById(outputId)!;
     this.inputEl = document.getElementById(inputId)! as HTMLInputElement;
     this.buttonEl = document.getElementById(buttonId)! as HTMLButtonElement;
+    this.navButtonsEl = document.getElementById('navigation-buttons')!;
+    
     this.buttonEl.onclick = () => this.handleInput();
     this.inputEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') this.handleInput();
     });
+    
     // Look Around button
     const lookBtn = document.getElementById('look-button');
     if (lookBtn) lookBtn.onclick = () => this.handleLookAround();
@@ -28,15 +32,11 @@ export class BrowserRunner {
     // Clear any existing content
     this.outputEl.innerHTML = '';
     
-    // Show detailed loading message
-    this.print('Initializing game...');
-    this.print('Downloading AI model (this may take a few minutes)...');
-    this.print('Please wait while the game loads...');
-    
     try {
       await this.engine.initialize();
       this.renderLocation();
       this.renderLog();
+      this.updateNavigationButtons();
       
       // Enable input once loaded
       this.inputEl.disabled = false;
@@ -56,6 +56,7 @@ export class BrowserRunner {
     await this.parser.parseCommand(input);
     this.renderLocation();
     this.renderLog();
+    this.updateNavigationButtons();
   }
 
   private print(msg: string): void {
@@ -67,6 +68,25 @@ export class BrowserRunner {
     const desc = this.engine.lookAround();
     this.outputEl.innerHTML += `<pre>${desc}</pre>`;
     this.outputEl.scrollTop = this.outputEl.scrollHeight;
+    this.updateNavigationButtons();
+  }
+
+  private updateNavigationButtons(): void {
+    this.navButtonsEl.innerHTML = '';
+    const exits = this.engine.getConnectedLocations();
+    
+    exits.forEach(exit => {
+      const btn = document.createElement('button');
+      btn.className = 'action-button';
+      btn.textContent = `Go to ${exit.name}`;
+      btn.onclick = async () => {
+        await this.parser.parseCommand(`go ${exit.name}`);
+        this.renderLocation();
+        this.renderLog();
+        this.updateNavigationButtons();
+      };
+      this.navButtonsEl.appendChild(btn);
+    });
   }
 
   private renderLocation(): void {
@@ -78,21 +98,25 @@ export class BrowserRunner {
     }
     let desc = `<div><strong>Location:</strong> ${location.name}</div>`;
     desc += `<div>${location.description}</div>`;
+    
     // Exits
     const exits = this.engine.getConnectedLocations();
     if (exits.length > 0) {
       desc += '<div><strong>Exits:</strong> ' + exits.map(e => e.name).join(', ') + '</div>';
     }
+    
     // Items
     const items = this.engine.getItemsInLocation();
     if (items.length > 0) {
       desc += '<div><strong>Items here:</strong> ' + items.map(i => i.name).join(', ') + '</div>';
     }
+    
     // Characters
     const characters = this.engine.getCharactersInLocation();
     if (characters.length > 0) {
       desc += '<div><strong>Characters here:</strong> ' + characters.map(c => c.name).join(', ') + '</div>';
     }
+    
     this.outputEl.innerHTML = desc + '<hr>' + this.outputEl.innerHTML;
   }
 
